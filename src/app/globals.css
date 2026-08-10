@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+@theme {
+    --font-serif: var(--font-serif), Georgia, serif;
+    --font-sans: var(--font-sans), system-ui, sans-serif;
+
+    --color-garden-green-950: #022c22;
+    --color-garden-green-900: #064e3b;
+    --color-garden-green-800: #065f46;
+    --color-garden-green-700: #047857;
+
+    --color-champagne-50: #fffbeb;
+    --color-champagne-100: #fef3c7;
+    --color-champagne-200: #fde68a;
+    --color-champagne-400: #fbbf24;
+    --color-champagne-500: #d97706;
+}
+
+html {
+    color-scheme: light;
+    scroll-behavior: smooth;
+}
+
+body {
+    background-color: #fafaf9; /* stone-50 */
+    color: #292524; /* stone-800 */
+    min-height: 100vh;
+}

@@ -1,3 +1,5 @@
+- update my GEMINI.md file again for all the changes/adds on the website
+
 # GEMINI.md - System Context & Development Guidelines
 
 ## 🎯 Domain Context & Critical Guardrails
@@ -12,8 +14,8 @@ This project is **Bayanihan Events Platform**, a high-concurrency venue reservat
 
 ## 🛠️ Stack Architecture
 
-* **Framework:** Next.js 15+ (App Router), React 19, TypeScript
-* **Styling & Icons:** Tailwind CSS, Lucide React
+* **Framework:** Next.js 15+ / 16 (App Router with Turbopack), React 19, TypeScript
+* **Styling & Icons:** Tailwind CSS v4 (`@import "tailwindcss";`), Lucide React
 * **Backend & Database:** Supabase PostgreSQL, Stored Procedures, Service Role SDK, Realtime WebSockets
 * **State & Server Execution:** Next.js Server Actions (`venueActions.ts`, `adminActions.ts`) with typed responses
 * **Architecture Style:** Modular feature-based layout inside `src/modules/` (`events/`, `admin/`, `packages/`, `shared/`)
@@ -25,40 +27,40 @@ This project is **Bayanihan Events Platform**, a high-concurrency venue reservat
 ```text
 src/
 ├── app/
+│   ├── globals.css
+│   ├── layout.tsx
 │   ├── (public)/
 │   │   ├── page.tsx
-│   │   ├── venues/
-│   │   └── contact/
-│   ├── admin/
-│   │   └── page.tsx
-│   └── api/
-│       └── cron/
-│           └── sync-calendars/
-│               └── route.ts
+│   │   └── venues/
+│   │       ├── page.tsx
+│   │       └── [slug]/
+│   │           └── page.tsx
+│   └── admin/
+│       └── page.tsx
 └── modules/
     ├── admin/
-    │   ├── components/
-    │   │   ├── modals/
-    │   │   │   ├── EditVenueModal.tsx
-    │   │   │   └── VerifyReceiptModal.tsx
-    │   │   └── tabs/
-    │   │       ├── BookingsTab.tsx
-    │   │       ├── VenuesTab.tsx
-    │   │       └── PackagesTab.tsx
-    │   └── actions/
-    │       └── adminActions.ts
+    │   ├── actions/
+    │   │   └── adminActions.ts
+    │   └── components/
+    │       ├── modals/
+    │       │   ├── EditVenueModal.tsx
+    │       │   └── VerifyReceiptModal.tsx
+    │       └── tabs/
+    │           ├── BookingsTab.tsx
+    │           ├── PackagesTab.tsx
+    │           └── VenuesTab.tsx
     ├── events/
-    │   ├── components/
-    │   │   ├── VenueCard.tsx
-    │   │   ├── VenueGrid.tsx
-    │   │   └── EventReservationFlow.tsx
-    │   └── actions/
-    │       └── venueActions.ts
+    │   ├── actions/
+    │   │   └── venueActions.ts
+    │   └── components/
+    │       ├── EventReservationFlow.tsx
+    │       ├── VenueCard.tsx
+    │       └── VenueGrid.tsx
     ├── packages/
-    │   ├── components/
-    │   │   └── PackageCard.tsx
-    │   └── actions/
-    │       └── packageActions.ts
+    │   ├── actions/
+    │   │   └── packageActions.ts
+    │   └── components/
+    │       └── PackageCard.tsx
     └── shared/
         ├── components/
         │   └── UI/
@@ -99,6 +101,7 @@ All database interactions must strictly conform to the primary schema establishe
 ### 1. Strict TypeScript Rules
 * All database entities, form payloads, and Server Action responses must be explicitly typed in `src/modules/shared/types/database.types.ts`.
 * **Zero `any` Policy:** Always type function arguments, state setters, and Supabase query results explicitly.
+* **Strict Generic Assignment Rule:** Generic default type assignments MUST use `=` syntax (`<T = void>`). Never omit the equals sign.
 
 ```typescript
 // src/modules/shared/types/database.types.ts
@@ -109,75 +112,76 @@ export type VenueSlotBlock = 'morning_lunch' | 'evening_dinner' | 'whole_day';
 export type PHEventType = 'debut_18th' | 'wedding' | 'christening_banyag' | 'baranggay_fiesta' | 'corporate_party' | 'private_gathering';
 
 export interface EventVenue {
-    id: string;
-    name: string;
-    slug: string;
-    description: string;
-    max_guest_capacity: number;
-    base_rental_rate_php: number;
-    is_under_maintenance: boolean;
-    image_urls: string[];
-    created_at: string;
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  max_guest_capacity: number;
+  base_rental_rate_php: number;
+  is_under_maintenance: boolean;
+  image_urls: string[];
+  created_at: string;
 }
 
 export interface EventPackage {
-    id: string;
-    name: string;
-    description: string;
-    included_catering_headcount: number;
-    has_sounds_and_lights: boolean;
-    has_stage_backdrop: boolean;
-    price_php: number;
+  id: string;
+  name: string;
+  description: string;
+  included_catering_headcount: number;
+  has_sounds_and_lights: boolean;
+  has_stage_backdrop: boolean;
+  price_php: number;
 }
 
 export interface EventAddOn {
-    id: string;
-    name: string;
-    description: string;
-    price_php: number;
+  id: string;
+  name: string;
+  description: string;
+  price_php: number;
 }
 
 export interface SlotBlockAvailability {
-    slot_block: VenueSlotBlock;
-    label: string;
-    time_range: string;
-    price_php: number;
-    status: 'available' | 'held' | 'booked';
-    held_expires_at?: string;
+  slot_block: VenueSlotBlock;
+  label: string;
+  time_range: string;
+  price_php: number;
+  status: 'available' | 'held' | 'booked';
+  held_expires_at?: string;
 }
 
 export interface EventBookingPayload {
-    venue_id: string;
-    event_date: string;
-    slot_block: VenueSlotBlock;
-    event_type: PHEventType;
-    package_id: string;
-    add_on_ids: string[];
-    expected_guest_count: number;
-    total_amount_php: number;
-    required_deposit_php: number;
-    remaining_balance_php: number;
-    payment_method: PHPaymentMethod;
-    organizer_name: string;
-    organizer_email: string;
-    organizer_phone: string;
+  venue_id: string;
+  event_date: string;
+  slot_block: VenueSlotBlock;
+  event_type: PHEventType;
+  package_id: string;
+  add_on_ids: string[];
+  expected_guest_count: number;
+  total_amount_php: number;
+  required_deposit_php: number;
+  remaining_balance_php: number;
+  payment_method: PHPaymentMethod;
+  organizer_name: string;
+  organizer_email: string;
+  organizer_phone: string;
 }
 
 export interface EventBookingRecord extends EventBookingPayload {
-    id: string;
-    status: EventBookingStatus;
-    created_at: string;
+  id: string;
+  status: EventBookingStatus;
+  created_at: string;
 }
 
-export interface ServerActionResponse<T void> {
-    success: boolean;
-    message?: string;
-    data?: T;
+export interface ServerActionResponse<T = void> {
+  success: boolean;
+  message?: string;
+  data?: T;
 }
 ```
 
 ### 2. UI & Component Standards
-* **Theme Styling:** Use dark, sleek slate/amber palette (`bg-slate-900`, `bg-slate-800`, `text-amber-400`, `border-slate-700`, `text-slate-100`).
+* **Tailwind v4 Rule:** Use `@import "tailwindcss";` in `src/app/globals.css`. Do not use deprecated v3 `@tailwind base;` directives.
+* **Theme Styling:** Use dark, sleek slate/amber palette (`bg-slate-950`, `bg-slate-900`, `bg-slate-800`, `text-amber-400`, `border-slate-700`, `text-slate-100`).
 * **Component Boundaries:** Modals belong in `src/modules/admin/components/modals/`, tab layouts in `src/modules/admin/components/tabs/`.
 * **State & Feedback:** Asynchronous submissions must display explicit loading indicators (`Loader2`), disable submit triggers during execution, and render feedback alerts on error or success.
 * **Maintenance Logic:** Public views call `getVenues()` (filtering out `is_under_maintenance: true`). Admin dashboards call `getVenues(true)` to display maintenance status badges.
@@ -193,18 +197,18 @@ import { revalidatePath } from 'next/cache';
 import { ServerActionResponse, EventVenue } from '@/modules/shared/types/database.types';
 
 export async function toggleVenueMaintenance(
-    venueId: string,
-    isUnderMaintenance: boolean
+        venueId: string,
+        isUnderMaintenance: boolean
 ): Promise<ServerActionResponse<EventVenue>> {
-    try {
-        // Supabase mutation logic...
-        revalidatePath('/admin');
-        revalidatePath('/venues');
-        return { success: true, message: 'Venue maintenance state updated.' };
-    } catch (error) {
-        const message = error instanceof Error ? error.message : 'Operation failed.';
-        return { success: false, message };
-    }
+  try {
+    // Supabase mutation logic...
+    revalidatePath('/admin');
+    revalidatePath('/venues');
+    return { success: true, message: 'Venue maintenance state updated.' };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Operation failed.';
+    return { success: false, message };
+  }
 }
 ```
 
