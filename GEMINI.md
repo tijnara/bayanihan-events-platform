@@ -56,6 +56,7 @@ This project is **Bayanihan Events Platform**, a high-concurrency venue reservat
 ---
 
 ## 🛠️ Stack Architecture
+
 * **Framework:** Next.js 15+ / 16 (App Router with Turbopack), React 19, TypeScript
 * **Styling & Fonts:** Tailwind CSS v4 (`@import "tailwindcss";`), Google Fonts (`Playfair_Display`, `Inter`), Lucide React
 * **Backend & Database:** Supabase PostgreSQL, Stored Procedures, Service Role SDK (`supabaseAdmin.ts`), Realtime WebSockets
@@ -339,6 +340,35 @@ export async function updateSiteSettings(
 
 ```
 
+### 4. IDE & Linter Warning Prevention Rules
+
+#### 4.1 Avoiding Tailwind CSS Conflict Warnings in JetBrains IDEs (WebStorm / PyCharm)
+
+* **Problem:** WebStorm flags CSS warnings like `'border-stone-300' applies the same CSS properties as 'focus:border-emerald-800'`.
+* **Prevention Rule:** Avoid stacking redundant border classes or conflicting static/focus border utilities on the same element. Instead of combining static `border-stone-300` with `focus:border-emerald-800`, use focus ring utilities (`focus:outline-none focus:ring-2 focus:ring-emerald-800/20`) or ensure focus state overrides are isolated properly:
+```tsx
+// ✅ RECOMMENDED: Focus rings avoid border property collision warnings
+className="w-full bg-stone-50 border border-stone-300 rounded-xl px-3.5 py-2.5 text-xs font-medium text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-800/20 focus:border-emerald-800"
+
+```
+
+
+
+#### 4.2 Avoiding React 19 / TypeScript Deprecation Warnings (`TS6385: 'FormEvent' is deprecated`)
+
+* **Problem:** React 19 / modern `@types/react` marks raw `FormEvent` or deprecated event imports as warning triggers when improperly parameterized.
+* **Prevention Rule:** Always use explicitly parameterized `React.FormEvent<HTMLFormElement>` on form submission handlers, or type native submission events cleanly. Never import raw unparameterized `FormEvent`:
+```tsx
+// ✅ RECOMMENDED: Explicitly type form submit handlers with HTMLFormElement
+const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  e.preventDefault();
+  // handler logic
+};
+
+```
+
+
+
 ---
 
 ## 💡 Localized Financial Rules & Business Equations
@@ -368,6 +398,7 @@ $$\text{Remaining Balance} = \text{Total Cost} - \text{Required Downpayment}$$
 * **Complete Code Snippets:** Provide full, copy-paste-ready React/TypeScript code without truncating imports, types, or internal logic.
 * **Strict Domain Consistency:** Always use event venue nomenclature (organizer, event date, slot block, catering headcount, package). Never default to hotel/resort terminology (rooms, nights, check-in).
 * **Strict Mobile-First Directive:** All generated components, layouts, pages, and modals must explicitly prioritize mobile viewport layouts and touch responsiveness before desktop enhancements.
+* **Zero Deprecation & Warning Policy:** Ensure all code snippets comply with Rule 4 (using `React.FormEvent<HTMLFormElement>` and clean Tailwind focus ring classes to eliminate IDE/linter warnings).
 * **Module Boundaries:** Maintain file placement rules within `src/modules/` as defined in the directory blueprint.
 
 ```
