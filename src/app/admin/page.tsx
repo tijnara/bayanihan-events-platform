@@ -1,24 +1,27 @@
 'use client';
 
 import React, { useState, useEffect, useTransition } from 'react';
-import { getBookings } from '@/modules/admin/actions/adminActions';
+import { getBookings, getSiteSettings } from '@/modules/admin/actions/adminActions';
 import { getVenues } from '@/modules/events/actions/venueActions';
-import { EventBookingRecord, EventVenue } from '@/modules/shared/types/database.types';
+import { EventBookingRecord, EventVenue, SiteSettings } from '@/modules/shared/types/database.types';
 import { BookingsTab } from '@/modules/admin/components/tabs/BookingsTab';
 import { VenuesTab } from '@/modules/admin/components/tabs/VenuesTab';
+import { HeroSettingsTab } from '@/modules/admin/components/tabs/HeroSettingsTab';
 import { Calendar, ShieldCheck, Clock, RefreshCw, Loader2 } from 'lucide-react';
 
 export default function AdminDashboardPage() {
-    const [activeTab, setActiveTab] = useState<'bookings' | 'venues'>('bookings');
+    const [activeTab, setActiveTab] = useState<'bookings' | 'venues' | 'hero'>('bookings');
     const [bookings, setBookings] = useState<EventBookingRecord[]>([]);
     const [venues, setVenues] = useState<EventVenue[]>([]);
+    const [siteSettings, setSiteSettings] = useState<SiteSettings | null>(null);
     const [isPending, startTransition] = useTransition();
 
     const loadData = () => {
         startTransition(async () => {
-            const [bookingsRes, venuesRes] = await Promise.all([
+            const [bookingsRes, venuesRes, settingsRes] = await Promise.all([
                 getBookings(),
                 getVenues(true),
+                getSiteSettings(),
             ]);
 
             if (bookingsRes.success && bookingsRes.data) {
@@ -26,6 +29,9 @@ export default function AdminDashboardPage() {
             }
             if (venuesRes.success && venuesRes.data) {
                 setVenues(venuesRes.data);
+            }
+            if (settingsRes.success && settingsRes.data) {
+                setSiteSettings(settingsRes.data);
             }
         });
     };
@@ -46,9 +52,9 @@ export default function AdminDashboardPage() {
                 {/* Responsive Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-emerald-950 text-white p-5 sm:p-6 rounded-2xl sm:rounded-3xl shadow-xl">
                     <div>
-            <span className="text-amber-300 text-[10px] sm:text-xs font-bold uppercase tracking-widest block mb-1">
-              Staff Portal Overview
-            </span>
+                        <span className="text-amber-300 text-[10px] sm:text-xs font-bold uppercase tracking-widest block mb-1">
+                          Staff Portal Overview
+                        </span>
                         <h1 className="font-serif text-xl sm:text-2xl md:text-3xl font-bold">
                             Regina’s Garden Management
                         </h1>
@@ -85,8 +91,8 @@ export default function AdminDashboardPage() {
                         <div>
                             <span className="text-[11px] sm:text-xs text-stone-500 font-semibold block">Confirmed Deposits</span>
                             <span className="font-serif text-xl sm:text-2xl font-bold text-emerald-950">
-                ₱{totalRevenueDeposits.toLocaleString()}
-              </span>
+                                ₱{totalRevenueDeposits.toLocaleString()}
+                            </span>
                         </div>
                         <Calendar className="w-7 h-7 text-amber-500/30 shrink-0" />
                     </div>
@@ -114,6 +120,16 @@ export default function AdminDashboardPage() {
                     >
                         Garden Spaces & Halls ({venues.length})
                     </button>
+                    <button
+                        onClick={() => setActiveTab('hero')}
+                        className={`pb-2.5 transition-all shrink-0 ${
+                            activeTab === 'hero'
+                                ? 'border-b-2 border-emerald-900 text-emerald-950 font-bold'
+                                : 'text-stone-400 hover:text-stone-700'
+                        }`}
+                    >
+                        Hero Content & Branding
+                    </button>
                 </div>
 
                 {/* Tab Content */}
@@ -124,8 +140,10 @@ export default function AdminDashboardPage() {
                     </div>
                 ) : activeTab === 'bookings' ? (
                     <BookingsTab bookings={bookings} onRefresh={loadData} />
-                ) : (
+                ) : activeTab === 'venues' ? (
                     <VenuesTab venues={venues} onRefresh={loadData} />
+                ) : (
+                    siteSettings && <HeroSettingsTab settings={siteSettings} onRefresh={loadData} />
                 )}
             </div>
         </div>

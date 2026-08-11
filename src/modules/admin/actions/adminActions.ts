@@ -7,6 +7,7 @@ import {
     EventBookingStatus,
     EventVenue,
     ServerActionResponse,
+    SiteSettings,
 } from '@/modules/shared/types/database.types';
 
 /**
@@ -86,6 +87,56 @@ export async function toggleVenueMaintenance(
         };
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Failed to update venue maintenance state.';
+        return { success: false, message };
+    }
+}
+
+/**
+ * Fetches dynamic landing page settings.
+ */
+export async function getSiteSettings(): Promise<ServerActionResponse<SiteSettings>> {
+    try {
+        const { data, error } = await supabaseAdmin
+            .from('site_settings')
+            .select('*')
+            .eq('id', 1)
+            .single();
+
+        if (error) throw new Error(error.message);
+
+        return { success: true, data: data as SiteSettings };
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to fetch site settings.';
+        return { success: false, message };
+    }
+}
+
+/**
+ * Updates site settings from the Admin Dashboard.
+ */
+export async function updateSiteSettings(
+    payload: Partial<SiteSettings>
+): Promise<ServerActionResponse<SiteSettings>> {
+    try {
+        const { data, error } = await supabaseAdmin
+            .from('site_settings')
+            .update({ ...payload, updated_at: new Date().toISOString() })
+            .eq('id', 1)
+            .select()
+            .single();
+
+        if (error) throw new Error(error.message);
+
+        revalidatePath('/');
+        revalidatePath('/admin');
+
+        return {
+            success: true,
+            message: 'Website content updated successfully!',
+            data: data as SiteSettings,
+        };
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to update site settings.';
         return { success: false, message };
     }
 }

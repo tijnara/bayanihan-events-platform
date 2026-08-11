@@ -64,6 +64,25 @@ export interface EventBookingRecord extends EventBookingPayload {
     created_at: string;
 }
 
+export interface SiteSettings {
+    id: number;
+    top_banner_text: string;
+    business_name: string;
+    business_subtitle: string;
+    nav_link_1_label: string;
+    nav_link_2_label: string;
+    nav_link_3_label: string;
+    nav_cta_button_text: string;
+    hero_season_badge_text: string;
+    hero_season_badge_icon: string;
+    hero_headline_main: string;
+    hero_headline_highlight: string;
+    hero_subtitle: string;
+    hero_cta_button_text: string;
+    hero_scroll_label: string;
+    updated_at?: string;
+}
+
 export interface ServerActionResponse<T = void> {
     success: boolean;
     message?: string;

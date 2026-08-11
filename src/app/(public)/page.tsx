@@ -12,13 +12,57 @@ import {
     Star,
     Award,
     Users2,
+    PartyPopper,
+    Crown,
+    Music,
+    Flower2,
+    Building2,
 } from 'lucide-react';
 import { getVenues } from '@/modules/events/actions/venueActions';
+import { getSiteSettings } from '@/modules/admin/actions/adminActions';
 import { VenueGrid } from '@/modules/events/components/VenueGrid';
 
+// Dynamic Icon Map for Event Venue Themes
+const BADGE_ICON_MAP: Record<string, React.ElementType> = {
+    Sparkles,
+    PartyPopper,
+    Trees,
+    Heart,
+    Crown,
+    Calendar,
+    Utensils,
+    Music,
+    Flower2,
+    Building2,
+    Star,
+};
+
 export default async function HomePage() {
-    const venuesResponse = await getVenues();
+    const [venuesResponse, settingsResponse] = await Promise.all([
+        getVenues(),
+        getSiteSettings(),
+    ]);
+
     const venues = venuesResponse.data || [];
+    const settings = settingsResponse.data || {
+        top_banner_text: 'Maramba Blvd., Libsong West, Lingayen, Pangasinan — Open for 2026/2027 Event Reservations',
+        business_name: 'Regina’s Garden',
+        business_subtitle: '& Restaurant',
+        nav_link_1_label: 'Event Spaces',
+        nav_link_2_label: 'Services & Catering',
+        nav_link_3_label: 'Our Ambiance',
+        nav_cta_button_text: 'Check Availability',
+        hero_season_badge_text: 'Booking 2026 / 2027 Seasons',
+        hero_season_badge_icon: 'Sparkles',
+        hero_headline_main: 'It’s not a celebration,',
+        hero_headline_highlight: 'unless it’s Regina’s.',
+        hero_subtitle: 'Host your dream garden wedding, 18th debut, baptismal reception, or corporate banquet nestled in Lingayen’s premier pavilion venue.',
+        hero_cta_button_text: 'Reserve an Event Space',
+        hero_scroll_label: 'SCROLL TO EXPLORE',
+    };
+
+    // Resolve dynamic icon component
+    const BadgeIconComponent = BADGE_ICON_MAP[settings.hero_season_badge_icon || 'Sparkles'] || Sparkles;
 
     return (
         <div className="min-h-screen bg-stone-50 text-stone-800 font-sans selection:bg-amber-200 selection:text-emerald-950 overflow-x-hidden w-full">
@@ -26,11 +70,11 @@ export default async function HomePage() {
             <div className="bg-emerald-950 py-2 px-3 sm:px-4 text-center text-[10px] sm:text-xs text-amber-200 font-medium flex items-center justify-center gap-1.5 border-b border-emerald-900/60 tracking-wide">
                 <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                 <span className="truncate max-w-[340px] sm:max-w-none">
-          Maramba Blvd., Libsong West, Lingayen, Pangasinan — Open for 2026/2027 Event Reservations
+          {settings.top_banner_text}
         </span>
             </div>
 
-            {/* 2. Responsive Mobile-First Header */}
+            {/* 2. Responsive Header */}
             <header className="sticky top-0 z-40 w-full bg-white/90 backdrop-blur-md border-b border-stone-200/80 shadow-sm transition-all">
                 <div className="max-w-6xl mx-auto px-4 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between gap-3">
                     <Link href="/" className="flex items-center gap-2.5 shrink-0 group">
@@ -39,24 +83,24 @@ export default async function HomePage() {
                         </div>
                         <div>
               <span className="font-serif font-bold text-sm sm:text-base text-emerald-950 tracking-wide block leading-none">
-                Regina’s Garden
+                {settings.business_name}
               </span>
                             <span className="text-[9px] sm:text-[10px] text-amber-700 font-sans tracking-widest uppercase block mt-0.5 font-bold">
-                & Restaurant
+                {settings.business_subtitle}
               </span>
                         </div>
                     </Link>
 
-                    {/* Desktop Navigation Links */}
+                    {/* Navigation Links */}
                     <nav className="hidden md:flex items-center gap-8 text-xs font-bold text-stone-600">
                         <a href="#venues-section" className="hover:text-emerald-900 transition-colors">
-                            Event Spaces
+                            {settings.nav_link_1_label}
                         </a>
                         <a href="#feature-cards" className="hover:text-emerald-900 transition-colors">
-                            Services & Catering
+                            {settings.nav_link_2_label}
                         </a>
                         <a href="#venues-section" className="hover:text-emerald-900 transition-colors">
-                            Our Ambiance
+                            {settings.nav_link_3_label}
                         </a>
                     </nav>
 
@@ -66,13 +110,13 @@ export default async function HomePage() {
                         className="bg-emerald-900 hover:bg-emerald-950 text-white font-bold px-3.5 py-2 sm:px-5 sm:py-2.5 rounded-xl text-xs transition-all shadow-md hover:shadow-emerald-900/20 flex items-center justify-center gap-1.5 shrink-0 leading-none"
                     >
                         <Calendar className="w-3.5 h-3.5 text-amber-300 shrink-0" />
-                        <span className="hidden sm:inline">Check Availability</span>
+                        <span className="hidden sm:inline">{settings.nav_cta_button_text}</span>
                         <span className="sm:hidden">Reserve</span>
                     </Link>
                 </div>
             </header>
 
-            {/* 3. Hero Section */}
+            {/* 3. Hero Section with Dynamic Badge Icon */}
             <section className="relative min-h-[82vh] sm:min-h-[88vh] w-full flex flex-col justify-center items-center px-4 sm:px-6 py-6 sm:py-8 overflow-hidden">
                 <div
                     className="absolute inset-0 bg-cover bg-center bg-no-repeat scale-105"
@@ -85,22 +129,24 @@ export default async function HomePage() {
                 {/* Hero Card */}
                 <div className="relative z-10 max-w-2xl w-full text-center my-auto">
                     <div className="bg-white/80 backdrop-blur-md p-5 sm:p-8 md:p-10 rounded-2xl sm:rounded-3xl border border-white/70 shadow-[0_15px_40px_rgba(0,0,0,0.12)] space-y-4 sm:space-y-5 mx-auto">
+
+                        {/* Dynamic Season Pill Badge + Dynamic Icon */}
                         <div className="inline-flex items-center gap-1.5 bg-emerald-900/10 border border-emerald-900/20 px-3 py-1 rounded-full text-emerald-900 text-[10px] sm:text-xs font-bold uppercase tracking-wider">
-                            <Sparkles className="w-3.5 h-3.5 text-amber-600 animate-pulse shrink-0" />
-                            <span>Booking 2026 / 2027 Seasons</span>
+                            <BadgeIconComponent className="w-3.5 h-3.5 text-amber-600 animate-pulse shrink-0" />
+                            <span>{settings.hero_season_badge_text}</span>
                         </div>
 
                         <h1 className="font-serif text-2xl sm:text-4xl md:text-5xl font-extrabold text-stone-900 tracking-tight leading-snug sm:leading-tight">
                             <span className="text-amber-700/80 font-normal font-serif text-xl sm:text-3xl mr-0.5 inline-block -translate-y-1 sm:-translate-y-2">“</span>
-                            It’s not a celebration, <br className="hidden sm:inline" />
+                            {settings.hero_headline_main} <br className="hidden sm:inline" />
                             <span className="text-amber-700 italic font-serif font-bold">
-                unless it’s Regina’s.
+                {settings.hero_headline_highlight}
               </span>
                             <span className="text-amber-700/80 font-normal font-serif text-xl sm:text-3xl ml-0.5 inline-block -translate-y-1 sm:-translate-y-2">”</span>
                         </h1>
 
                         <p className="text-stone-700 text-xs sm:text-sm font-medium leading-relaxed max-w-lg mx-auto tracking-wide">
-                            Host your dream garden wedding, 18th debut, baptismal reception, or corporate banquet nestled in Lingayen’s premier pavilion venue.
+                            {settings.hero_subtitle}
                         </p>
 
                         <div className="pt-1 sm:pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -108,7 +154,7 @@ export default async function HomePage() {
                                 href="/venues"
                                 className="group relative w-full sm:w-auto bg-emerald-900 hover:bg-emerald-950 text-white font-bold px-7 py-3.5 rounded-2xl transition-all shadow-md hover:shadow-emerald-900/20 text-xs sm:text-sm flex items-center justify-center gap-2.5 active:scale-95"
                             >
-                                <span>Reserve an Event Space</span>
+                                <span>{settings.hero_cta_button_text}</span>
                                 <ArrowRight className="w-4 h-4 text-amber-300 group-hover:translate-x-1 transition-transform" />
                             </Link>
                         </div>
@@ -121,7 +167,7 @@ export default async function HomePage() {
                         href="#social-proof"
                         className="flex flex-col items-center gap-1 text-stone-700 hover:text-emerald-950 transition-colors animate-bounce text-[10px] sm:text-[11px] font-bold tracking-widest uppercase"
                     >
-                        <span>Scroll to Explore</span>
+                        <span>{settings.hero_scroll_label}</span>
                         <ChevronDown className="w-4 h-4 text-emerald-800" />
                     </a>
                 </div>
@@ -145,7 +191,7 @@ export default async function HomePage() {
                 </div>
             </section>
 
-            {/* 5. Clickable Feature Cards (Equal Heights, Uniform Weight & Welcoming "Flexible Payments" Wording) */}
+            {/* 5. Clickable Feature Cards */}
             <section id="feature-cards" className="py-10 sm:py-16 bg-white border-b border-stone-200/80">
                 <div className="max-w-6xl mx-auto px-4 sm:px-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                     {[
@@ -173,7 +219,7 @@ export default async function HomePage() {
                 </div>
             </section>
 
-            {/* 6. Venue Selection Grid with Prominent Centered Directory Button */}
+            {/* 6. Venue Selection Grid */}
             <section id="venues-section" className="py-10 sm:py-20 px-4 sm:px-6 max-w-6xl mx-auto space-y-8 sm:space-y-10 bg-stone-50">
                 <div className="text-center max-w-xl mx-auto space-y-2">
           <span className="text-emerald-800 text-[10px] sm:text-xs font-extrabold uppercase tracking-widest block">
@@ -186,7 +232,6 @@ export default async function HomePage() {
 
                 <VenueGrid venues={venues} />
 
-                {/* Prominent Centered Button replaces upper-right link */}
                 <div className="pt-2 text-center">
                     <Link
                         href="/venues"

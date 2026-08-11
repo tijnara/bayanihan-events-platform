@@ -24,9 +24,11 @@ This project is **Bayanihan Events Platform**, a high-concurrency venue reservat
 * **Body Font (Sans-Serif):** `Inter` (`font-sans`) — Provides high legibility for descriptions, forms, catering menus, and checkout line items.
 
 ### 3. Mobile-First UI/UX Architectural Rules & Key Modules
-* **Hero Section Layout (`src/app/(public)/page.tsx`):**
-  * Features a full-bleed widescreen background image with a light vignette overlay, containing a sleek translucent glass card (`bg-white/80 backdrop-blur-md`) that scales fluidly without obscuring venue imagery on mobile viewports.
-  * Tagline quote typography uses balanced, inline quotation styling to prevent text crowding.
+* **Hero Section & Dynamic Branding (`src/app/(public)/page.tsx`):**
+  * Reads dynamic content from `public.site_settings` via `getSiteSettings()`.
+  * Features a full-bleed widescreen background image with a light vignette overlay, containing a translucent glass card (`bg-white/80 backdrop-blur-md`) scaling fluidly without obscuring venue imagery on mobile viewports.
+  * Tagline quote typography uses balanced inline quotation styling to prevent text crowding.
+  * Supports dynamic badge text and event-themed Lucide badge icons (*Sparkles, PartyPopper, Trees, Heart, Crown, Calendar, Utensils, Music, Flower2, Building2, Star*) mapped via `BADGE_ICON_MAP`.
   * Includes a social proof trust bar (*"4.9★ Rated Venue"*, *"100% In-House Buffet Catering"*, *"1,200+ Celebrations Hosted"*).
   * Feature cards double as equal-height flex containers with uniform font weights and welcoming phrasing (*"Flexible Payments"*).
   * Replaces upper-right directory links with a prominent, centered action button (`View Full Venue Directory →`) below the venue selection grid.
@@ -44,7 +46,8 @@ This project is **Bayanihan Events Platform**, a high-concurrency venue reservat
   * **Cancellation Safety Modal:** Clicking cancel opens a responsive popup (`AlertTriangle` modal) prompting the user to confirm cancellation before releasing slot holds and redirecting to `/venues`.
   * **High-Contrast Step Indicators:** Step buttons (`1. Date & Time`, `2. Catering`, `3. Checkout`) use high-contrast typography and indicators across mobile devices.
   * **Sticky Financial Sidebar:** Mobile-first calculator sidebar (`lg:sticky lg:top-24`) dynamically calculates total cost, 30% required deposit, and remaining balance.
-* **Responsive Admin Portal (`src/app/admin/page.tsx`):**
+* **Responsive Admin Portal & Site Content Management (`src/app/admin/page.tsx`):**
+  * **Hero Content & Branding Tab (`HeroSettingsTab.tsx`):** Grants staff real-time control over top announcement banners, business names, navigation labels, headlines, CTA button text, and hero season badge icon dropdown selectors with live previews.
   * **Auto-Stacking Stat Cards:** Summary cards stack vertically on mobile screens (`grid-cols-1 sm:grid-cols-3`).
   * **Horizontal Scroll Menu:** Tab navigation features overflow scrolling (`overflow-x-auto whitespace-nowrap`).
   * **Mobile-Safe Data Tables (`BookingsTab.tsx`):** Data tables are wrapped in horizontal scroll containers (`overflow-x-auto min-w-[640px]`) to maintain legibility on narrow screens.
@@ -53,7 +56,6 @@ This project is **Bayanihan Events Platform**, a high-concurrency venue reservat
 ---
 
 ## 🛠️ Stack Architecture
-
 * **Framework:** Next.js 15+ / 16 (App Router with Turbopack), React 19, TypeScript
 * **Styling & Fonts:** Tailwind CSS v4 (`@import "tailwindcss";`), Google Fonts (`Playfair_Display`, `Inter`), Lucide React
 * **Backend & Database:** Supabase PostgreSQL, Stored Procedures, Service Role SDK (`supabaseAdmin.ts`), Realtime WebSockets
@@ -87,6 +89,7 @@ src/
     │       │   └── VerifyReceiptModal.tsx
     │       └── tabs/
     │           ├── BookingsTab.tsx
+    │           ├── HeroSettingsTab.tsx
     │           ├── PackagesTab.tsx
     │           └── VenuesTab.tsx
     ├── events/
@@ -109,33 +112,77 @@ src/
         └── utils/
             ├── supabase.ts
             └── supabaseAdmin.ts
+
 ```
 
 ---
 
 ## 🗄️ Database Reference (`supabase/migrations/20260810000000_init_event_venues.sql`)
+
 All database interactions must strictly conform to the primary schema established for this platform:
 
 ### 1. Database Enums
+
 * `ph_payment_method`: `'gcash'`, `'maya'`, `'palawan_express'`, `'cliqq_7eleven'`, `'bank_transfer'`, `'cash_otc'`
 * `event_booking_status`: `'pending_deposit'`, `'confirmed'`, `'completed'`, `'cancelled'`
 * `venue_slot_block`: `'morning_lunch'`, `'evening_dinner'`, `'whole_day'`
 * `ph_event_type`: `'debut_18th'`, `'wedding'`, `'christening_banyag'`, `'baranggay_fiesta'`, `'corporate_party'`, `'private_gathering'`
 
 ### 2. Primary Tables
+
 * `public.event_venues`: Base spaces (*Regina's Main Garden Pavilion*, *Grand Glass Function Hall*, *Veranda Al Fresco Deck*), capacity, rental rates, maintenance status (`is_under_maintenance`).
 * `public.event_packages`: In-house buffet bundles (*Classic Garden Feast*, *Royal Garden Grand Celebration*), headcount, sounds/lights, stage backdrop inclusions.
 * `public.event_add_ons`: Optional extras (*Live Lechon Carving Station*, *Pangasinan Seafood Special Bar*, *360 Photo Booth*).
 * `public.event_slot_holds`: 10-to-15 minute temporary reservation locks with `expires_at` TTL.
 * `public.event_bookings`: Permanent bookings (`EVT-YYYY-XXXX` ID format) tracking 30% / ₱5,000 downpayment calculations.
+* `public.site_settings`: Single-row (`id = 1`) configuration storing dynamic homepage labels, text headlines, CTAs, and badge icons.
+
+```sql
+-- Create site_settings table for dynamic landing page content
+CREATE TABLE IF NOT EXISTS public.site_settings (
+    id INT PRIMARY KEY DEFAULT 1,
+    top_banner_text TEXT NOT NULL DEFAULT 'Maramba Blvd., Libsong West, Lingayen, Pangasinan — Open for 2026/2027 Event Reservations',
+    business_name TEXT NOT NULL DEFAULT 'Regina’s Garden',
+    business_subtitle TEXT NOT NULL DEFAULT '& Restaurant',
+    nav_link_1_label TEXT NOT NULL DEFAULT 'Event Spaces',
+    nav_link_2_label TEXT NOT NULL DEFAULT 'Services & Catering',
+    nav_link_3_label TEXT NOT NULL DEFAULT 'Our Ambiance',
+    nav_cta_button_text TEXT NOT NULL DEFAULT 'Check Availability',
+    hero_season_badge_text TEXT NOT NULL DEFAULT 'Booking 2026 / 2027 Seasons',
+    hero_season_badge_icon TEXT NOT NULL DEFAULT 'Sparkles',
+    hero_headline_main TEXT NOT NULL DEFAULT 'It’s not a celebration,',
+    hero_headline_highlight TEXT NOT NULL DEFAULT 'unless it’s Regina’s.',
+    hero_subtitle TEXT NOT NULL DEFAULT 'Host your dream garden wedding, 18th debut, baptismal reception, or corporate banquet nestled in Lingayen’s premier pavilion venue.',
+    hero_cta_button_text TEXT NOT NULL DEFAULT 'Reserve an Event Space',
+    hero_scroll_label TEXT NOT NULL DEFAULT 'SCROLL TO EXPLORE',
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT single_row_check CHECK (id = 1)
+);
+
+-- Seed initial default settings row
+INSERT INTO public.site_settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING;
+
+-- Grant public read access
+ALTER TABLE public.site_settings ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow public read access to site_settings" ON public.site_settings FOR SELECT USING (true);
+
+-- Ensure badge icon column exists
+ALTER TABLE public.site_settings 
+ADD COLUMN IF NOT EXISTS hero_season_badge_icon TEXT NOT NULL DEFAULT 'Sparkles';
+
+```
 
 ### 3. Concurrency Locking Mechanics
-* Slot holds are governed by the atomic PostgreSQL stored procedure:
-  ```sql
-  public.hold_event_slot(p_venue_id UUID, p_event_date DATE, p_slot_block venue_slot_block, p_session_id TEXT)
-  ```
+
+Slot holds are governed by the atomic PostgreSQL stored procedure:
+
+```sql
+public.hold_event_slot(p_venue_id UUID, p_event_date DATE, p_slot_block venue_slot_block, p_session_id TEXT)
+
+```
 
 ### 4. Admin Security & RLS Bypass
+
 * Public user queries run through `src/modules/shared/utils/supabase.ts` (`NEXT_PUBLIC_SUPABASE_ANON_KEY`).
 * Administrative operations (`src/modules/admin/actions/adminActions.ts`) MUST execute via `src/modules/shared/utils/supabaseAdmin.ts` (`SUPABASE_SERVICE_ROLE_KEY`) to bypass Supabase Row Level Security (RLS) safely on server-side actions.
 
@@ -144,7 +191,8 @@ All database interactions must strictly conform to the primary schema establishe
 ## 📐 Coding Standards & Guidelines
 
 ### 1. Strict TypeScript Rules
-* All database entities, form payloads, and Server Action responses must be explicitly typed in `src/modules/shared/types/database.types.ts`.
+
+* All database entities, form payloads, site settings, and Server Action responses must be explicitly typed in `src/modules/shared/types/database.types.ts`.
 * **Zero `any` Policy:** Always type function arguments, state setters, and Supabase query results explicitly.
 * **Strict Generic Assignment Rule:** Generic default type assignments MUST use `=` syntax (`<T = void>`). Never omit the equals sign.
 
@@ -217,15 +265,36 @@ export interface EventBookingRecord extends EventBookingPayload {
   created_at: string;
 }
 
+export interface SiteSettings {
+  id: number;
+  top_banner_text: string;
+  business_name: string;
+  business_subtitle: string;
+  nav_link_1_label: string;
+  nav_link_2_label: string;
+  nav_link_3_label: string;
+  nav_cta_button_text: string;
+  hero_season_badge_text: string;
+  hero_season_badge_icon: string;
+  hero_headline_main: string;
+  hero_headline_highlight: string;
+  hero_subtitle: string;
+  hero_cta_button_text: string;
+  hero_scroll_label: string;
+  updated_at?: string;
+}
+
 // ALWAYS use <T void> syntax with the '=' sign
-export interface ServerActionResponse<T void> {
+export interface ServerActionResponse<T = void> {
   success: boolean;
   message?: string;
   data?: T;
 }
+
 ```
 
 ### 2. UI & Component Standards
+
 * **Tailwind v4 Rule:** Use `@import "tailwindcss";` in `src/app/globals.css`. Do not use deprecated v3 `@tailwind base;` directives.
 * **Mobile-First Priority:** Write Tailwind utilities mobile-first (e.g., `text-xs sm:text-sm md:text-base`, `flex-col sm:flex-row`, `w-full sm:w-auto`).
 * **Theme Styling:** Use light stone backgrounds (`bg-stone-50`, `bg-white`), forest green primary triggers (`bg-emerald-900`, `hover:bg-emerald-950`), and champagne gold accents (`text-amber-600`, `bg-amber-100`, `bg-amber-300`).
@@ -234,39 +303,40 @@ export interface ServerActionResponse<T void> {
 * **Maintenance Logic:** Public views call `getVenues()` (filtering out `is_under_maintenance: true`). Admin dashboards call `getVenues(true)` to display maintenance status badges.
 
 ### 3. Server Actions Protocol
+
 * Every Server Action must return a strongly-typed `ServerActionResponse<T>` object.
-* Use `supabaseAdmin` for admin actions to bypass RLS when querying all bookings across guest sessions.
-* Always trigger `revalidatePath()` on modified paths (`/admin`, `/venues`) upon database mutations.
+* Use `supabaseAdmin` for admin actions to bypass RLS when querying all bookings or modifying `site_settings`.
+* Always trigger `revalidatePath()` on modified paths (`/`, `/admin`, `/venues`) upon database mutations.
 
 ```typescript
 'use server';
 
 import { revalidatePath } from 'next/cache';
 import { supabaseAdmin } from '@/modules/shared/utils/supabaseAdmin';
-import { ServerActionResponse, EventVenue } from '@/modules/shared/types/database.types';
+import { ServerActionResponse, SiteSettings } from '@/modules/shared/types/database.types';
 
-export async function toggleVenueMaintenance(
-        venueId: string,
-        isUnderMaintenance: boolean
-): Promise<ServerActionResponse<EventVenue>> {
+export async function updateSiteSettings(
+  payload: Partial<SiteSettings>
+): Promise<ServerActionResponse<SiteSettings>> {
   try {
     const { data, error } = await supabaseAdmin
-            .from('event_venues')
-            .update({ is_under_maintenance: isUnderMaintenance })
-            .eq('id', venueId)
-            .select()
-            .single();
+      .from('site_settings')
+      .update({ ...payload, updated_at: new Date().toISOString() })
+      .eq('id', 1)
+      .select()
+      .single();
 
     if (error) throw new Error(error.message);
 
+    revalidatePath('/');
     revalidatePath('/admin');
-    revalidatePath('/venues');
-    return { success: true, message: 'Venue maintenance state updated.', data: data as EventVenue };
+    return { success: true, message: 'Website content updated successfully!', data: data as SiteSettings };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Operation failed.';
     return { success: false, message };
   }
 }
+
 ```
 
 ---
@@ -276,13 +346,20 @@ export async function toggleVenueMaintenance(
 When writing financial calculations for dynamic estimates and checkout flows, adhere strictly to these formulas:
 
 * **Total Event Cost Assembly:**
-  $$\text{Total Cost} = \text{Base Rental (Slot Block)} + \text{Package Price} + \sum(\text{Add-ons})$$
+
+$$\text{Total Cost} = \text{Base Rental (Slot Block)} + \text{Package Price} + \sum(\text{Add-ons})$$
+
 
 * **Required Downpayment Formula:**
-  $$\text{Required Downpayment} = \max(5000, \text{Math.round}(\text{Total Cost} \times 0.30))$$
+
+$$\text{Required Downpayment} = \max(5000, \text{Math.round}(\text{Total Cost} \times 0.30))$$
+
 
 * **Remaining Balance Formula:**
-  $$\text{Remaining Balance} = \text{Total Cost} - \text{Required Downpayment}$$
+
+$$\text{Remaining Balance} = \text{Total Cost} - \text{Required Downpayment}$$
+
+
 
 ---
 
@@ -292,3 +369,7 @@ When writing financial calculations for dynamic estimates and checkout flows, ad
 * **Strict Domain Consistency:** Always use event venue nomenclature (organizer, event date, slot block, catering headcount, package). Never default to hotel/resort terminology (rooms, nights, check-in).
 * **Strict Mobile-First Directive:** All generated components, layouts, pages, and modals must explicitly prioritize mobile viewport layouts and touch responsiveness before desktop enhancements.
 * **Module Boundaries:** Maintain file placement rules within `src/modules/` as defined in the directory blueprint.
+
+```
+
+```
