@@ -15,12 +15,19 @@ This project is **Bayanihan Events Platform**, a high-concurrency venue reservat
 
 ### 1. Color Palette & Motifs
 * **Primary Brand Green:** Deep Forest / Emerald Green (`#022c22` / `emerald-950`, `#064e3b` / `emerald-900`, `#065f46` / `emerald-800`). Used for primary headers, navigation bars, and primary CTA triggers.
-* **Secondary Champagne Gold:** Warm Metallic & Champagne Gold (`#fde68a` / `amber-200`, `#fbbf24` / `amber-400`, `#d97706` / `amber-600`). Used for capacity badges, price tags, and active step highlight rings.
+* **Secondary Champagne Gold:** Warm Metallic & Champagne Gold (`#fde68a` / `amber-200`, `#fcd34d` / `amber-300`, `#fbbf24` / `amber-400`, `#b45309` / `amber-700`). Used for capacity badges, price tags, logo rings, and active step highlight rings.
 * **Warm Neutral Backgrounds:** Clean Off-White & Warm Stone (`#fafaf9` / `stone-50`, `#ffffff` / `white`, `#f5f5f4` / `stone-100`). Ensures visual elegance and readability across garden event photography.
 
 ### 2. Typography Dual System
 * **Header Font (Serif):** `Playfair Display` (`font-serif`) — Captures the sophisticated, celebratory tone of debuts, weddings, and banquets.
 * **Body Font (Sans-Serif):** `Inter` (`font-sans`) — Provides high legibility for descriptions, forms, catering menus, and checkout line items.
+
+### 3. Immersive UX & Visual Showcase Guidelines
+* **Full-Bleed Hero Section:** Hero sections feature immersive full-viewport garden backdrops overlaid with translucent glassmorphic text cards (`bg-white/85 backdrop-blur-md`) and animated scroll cues.
+* **Floating Header Navigation:** Includes a sticky backdrop-blur header (`bg-stone-900/85 backdrop-blur-md`) featuring a gold-ringed brand emblem, section links, and champagne-gold action buttons.
+* **Floating Feature Cards:** Core service highlights (*Garden Pavilions, Buffet Catering, Weddings & Debuts, Instant Downpayment*) are borderless floating cards with shadow utilities (`shadow-lg hover:shadow-2xl hover:-translate-y-1.5`) that double as interactive scroll links.
+* **Venue Space Cards (`VenueCard.tsx`):** Feature strict 16:10 widescreen aspect ratios (`aspect-[16/10]`), scale-up image hover transitions (`group-hover:scale-110`), glassmorphic capacity badges, two-line price formatting, and error-safe fallback images.
+* **Interactive Step Wizard (`EventReservationFlow.tsx`):** Guides clients through a 3-step funnel (1. Date & Slot Block Lock → 2. Catering Package & Extras → 3. Live Financial Calculator & Downpayment Checkout) with bidirectional navigation and a 10-minute slot hold countdown timer.
 
 ---
 
@@ -28,7 +35,7 @@ This project is **Bayanihan Events Platform**, a high-concurrency venue reservat
 
 * **Framework:** Next.js 15+ / 16 (App Router with Turbopack), React 19, TypeScript
 * **Styling & Fonts:** Tailwind CSS v4 (`@import "tailwindcss";`), Google Fonts (`Playfair_Display`, `Inter`), Lucide React
-* **Backend & Database:** Supabase PostgreSQL, Stored Procedures, Service Role SDK, Realtime WebSockets
+* **Backend & Database:** Supabase PostgreSQL, Stored Procedures, Service Role SDK (`supabaseAdmin.ts`), Realtime WebSockets
 * **State & Server Execution:** Next.js Server Actions (`venueActions.ts`, `adminActions.ts`) with typed responses
 * **Architecture Style:** Modular feature-based layout inside `src/modules/` (`events/`, `admin/`, `packages/`, `shared/`)
 
@@ -79,7 +86,8 @@ src/
         ├── types/
         │   └── database.types.ts
         └── utils/
-            └── supabase.ts
+            ├── supabase.ts
+            └── supabaseAdmin.ts
 ```
 
 ---
@@ -105,6 +113,10 @@ All database interactions must strictly conform to the primary schema establishe
   ```sql
   public.hold_event_slot(p_venue_id UUID, p_event_date DATE, p_slot_block venue_slot_block, p_session_id TEXT)
   ```
+
+### 4. Admin Security & RLS Bypass
+* Public user queries run through `src/modules/shared/utils/supabase.ts` (`NEXT_PUBLIC_SUPABASE_ANON_KEY`).
+* Administrative operations (`src/modules/admin/actions/adminActions.ts`) MUST execute via `src/modules/shared/utils/supabaseAdmin.ts` (`SUPABASE_SERVICE_ROLE_KEY`) to bypass Supabase Row Level Security (RLS) safely on server-side actions.
 
 ---
 
@@ -194,19 +206,23 @@ export interface ServerActionResponse<T = void> {
 
 ### 2. UI & Component Standards
 * **Tailwind v4 Rule:** Use `@import "tailwindcss";` in `src/app/globals.css`. Do not use deprecated v3 `@tailwind base;` directives.
-* **Theme Styling:** Use warm stone backgrounds (`bg-stone-50`, `bg-white`), forest green buttons (`bg-emerald-900`, `hover:bg-emerald-950`), and champagne gold accents (`text-amber-600`, `bg-amber-100`).
+* **Theme Styling:** Use warm stone backgrounds (`bg-stone-50`, `bg-white`), forest green buttons (`bg-emerald-900`, `hover:bg-emerald-950`), and champagne gold accents (`text-amber-600`, `bg-amber-100`, `bg-amber-300`).
+* **Card & Aspect Ratio Standards:** Venue cards (`VenueCard.tsx`) use `aspect-[16/10]` image containers, borderless elevated cards (`shadow-md hover:shadow-2xl`), fallback photo handlers, and two-line pricing typography.
+* **Sticky Cost Breakdown:** Reservation workflows (`EventReservationFlow.tsx`) feature a sticky calculation sidebar (`sticky top-24`) that dynamically recalculates total event cost, 30% required deposit, and balance in real time.
 * **Component Boundaries:** Modals belong in `src/modules/admin/components/modals/`, tab layouts in `src/modules/admin/components/tabs/`.
 * **State & Feedback:** Asynchronous submissions must display explicit loading indicators (`Loader2`), disable submit triggers during execution, and render feedback alerts on error or success.
 * **Maintenance Logic:** Public views call `getVenues()` (filtering out `is_under_maintenance: true`). Admin dashboards call `getVenues(true)` to display maintenance status badges.
 
 ### 3. Server Actions Protocol
 * Every Server Action must return a strongly-typed `ServerActionResponse<T>` object.
+* Use `supabaseAdmin` for admin actions to bypass RLS when querying all bookings across guest sessions.
 * Always trigger `revalidatePath()` on modified paths (`/admin`, `/venues`) upon database mutations.
 
 ```typescript
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { supabaseAdmin } from '@/modules/shared/utils/supabaseAdmin';
 import { ServerActionResponse, EventVenue } from '@/modules/shared/types/database.types';
 
 export async function toggleVenueMaintenance(
@@ -214,10 +230,18 @@ export async function toggleVenueMaintenance(
         isUnderMaintenance: boolean
 ): Promise<ServerActionResponse<EventVenue>> {
   try {
-    // Supabase mutation logic...
+    const { data, error } = await supabaseAdmin
+            .from('event_venues')
+            .update({ is_under_maintenance: isUnderMaintenance })
+            .eq('id', venueId)
+            .select()
+            .single();
+
+    if (error) throw new Error(error.message);
+
     revalidatePath('/admin');
     revalidatePath('/venues');
-    return { success: true, message: 'Venue maintenance state updated.' };
+    return { success: true, message: 'Venue maintenance state updated.', data: data as EventVenue };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Operation failed.';
     return { success: false, message };
