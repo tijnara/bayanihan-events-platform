@@ -23,16 +23,28 @@ This project is **Bayanihan Events Platform**, a high-concurrency venue reservat
 * **Header Font (Serif):** `Playfair Display` (`font-serif`) — Captures the sophisticated, celebratory tone of debuts, weddings, and banquets.
 * **Body Font (Sans-Serif):** `Inter` (`font-sans`) — Provides high legibility for descriptions, forms, catering menus, and checkout line items.
 
-### 3. Mobile-First UI/UX Architectural Rules
-* **Hero Section Layout (`page.tsx`):** Features a full-bleed widescreen background image with a light vignette overlay, containing a bright translucent glass card (`bg-white/92 backdrop-blur-md`) that scales fluidly without obscuring venue imagery on mobile viewports.
-* **Responsive Sticky Header:** Features a backdrop-blur floating header with compact logo emblem styling, responsive navigation links, and full/compact CTA triggers.
-* **Venue Cards (`VenueCard.tsx`):** Borderless white cards backed by soft drop shadows (`shadow-md hover:shadow-2xl`), uniform `aspect-[16/10]` widescreen image frames, scale-up hover transitions (`group-hover:scale-105`), error-safe image fallback handlers, glassmorphic capacity badges, and full-width touch buttons on mobile viewports.
-* **Interactive Step Wizard (`EventReservationFlow.tsx`):**
-  * **Header Controls:** Features dedicated **Home** and **Cancel** buttons in the header banner.
-  * **Cancellation Safety Modal:** Clicking Home or Cancel opens a responsive popup (`AlertTriangle` modal) prompting the user to confirm cancellation before releasing slot holds and redirecting to `/`.
-  * **Mobile Wizard:** Step indicator buttons (`Date & Time`, `Catering`, `Checkout`) collapse cleanly on narrow screens.
+### 3. Mobile-First UI/UX Architectural Rules & Key Modules
+* **Hero Section Layout (`src/app/(public)/page.tsx`):**
+  * Features a full-bleed widescreen background image with a light vignette overlay, containing a sleek translucent glass card (`bg-white/80 backdrop-blur-md`) that scales fluidly without obscuring venue imagery on mobile viewports.
+  * Tagline quote typography uses balanced, inline quotation styling to prevent text crowding.
+  * Includes a social proof trust bar (*"4.9★ Rated Venue"*, *"100% In-House Buffet Catering"*, *"1,200+ Celebrations Hosted"*).
+  * Feature cards double as equal-height flex containers with uniform font weights and welcoming phrasing (*"Flexible Payments"*).
+  * Replaces upper-right directory links with a prominent, centered action button (`View Full Venue Directory →`) below the venue selection grid.
+* **Venues Directory Listing (`src/app/(public)/venues/page.tsx`):**
+  * Includes a sticky navigation bar with a clear `← Back to Home` action link.
+  * Features interactive category filter pills (*All Spaces, Outdoor Garden, Indoor Glass Hall, Al Fresco Deck*) and a dynamic sort selector (*Recommended, Highest Capacity, Lowest Rental Rate*).
+* **Venue Cards (`src/modules/events/components/VenueCard.tsx`):**
+  * Borderless white cards backed by soft drop shadows (`shadow-md hover:shadow-2xl hover:-translate-y-1.5`).
+  * Uniform `aspect-[16/10]` widescreen image frames with scale-up hover transitions (`group-hover:scale-105`) and error-safe image fallback handlers.
+  * Translucent backdrop-blur capacity badges (`bg-white/80 backdrop-blur-md`).
+  * Supports full description rendering for directory views and flex-centered action rows where pricing blocks and *"Book Venue"* buttons align on the exact vertical center axis.
+* **Interactive Step Wizard (`src/modules/events/components/EventReservationFlow.tsx`):**
+  * **Explicit Active Slot Visibility:** Selected slot cards feature an explicit checkmark (`CheckCircle2`), bold green border (`border-2 border-emerald-800`), light green background tint (`bg-emerald-50/90`), and a `"SELECTED"` badge.
+  * **Header & Navigation Controls:** Moves the `← Back to Venues Directory` link outside the header container to prevent squeezed button layouts on mobile screens. Features dedicated **Cancel Draft** actions.
+  * **Cancellation Safety Modal:** Clicking cancel opens a responsive popup (`AlertTriangle` modal) prompting the user to confirm cancellation before releasing slot holds and redirecting to `/venues`.
+  * **High-Contrast Step Indicators:** Step buttons (`1. Date & Time`, `2. Catering`, `3. Checkout`) use high-contrast typography and indicators across mobile devices.
   * **Sticky Financial Sidebar:** Mobile-first calculator sidebar (`lg:sticky lg:top-24`) dynamically calculates total cost, 30% required deposit, and remaining balance.
-* **Responsive Admin Portal (`app/admin/page.tsx`):**
+* **Responsive Admin Portal (`src/app/admin/page.tsx`):**
   * **Auto-Stacking Stat Cards:** Summary cards stack vertically on mobile screens (`grid-cols-1 sm:grid-cols-3`).
   * **Horizontal Scroll Menu:** Tab navigation features overflow scrolling (`overflow-x-auto whitespace-nowrap`).
   * **Mobile-Safe Data Tables (`BookingsTab.tsx`):** Data tables are wrapped in horizontal scroll containers (`overflow-x-auto min-w-[640px]`) to maintain legibility on narrow screens.
@@ -206,7 +218,7 @@ export interface EventBookingRecord extends EventBookingPayload {
 }
 
 // ALWAYS use <T void> syntax with the '=' sign
-export interface ServerActionResponse<T = void> {
+export interface ServerActionResponse<T void> {
   success: boolean;
   message?: string;
   data?: T;
@@ -234,16 +246,16 @@ import { supabaseAdmin } from '@/modules/shared/utils/supabaseAdmin';
 import { ServerActionResponse, EventVenue } from '@/modules/shared/types/database.types';
 
 export async function toggleVenueMaintenance(
-  venueId: string,
-  isUnderMaintenance: boolean
+        venueId: string,
+        isUnderMaintenance: boolean
 ): Promise<ServerActionResponse<EventVenue>> {
   try {
     const { data, error } = await supabaseAdmin
-      .from('event_venues')
-      .update({ is_under_maintenance: isUnderMaintenance })
-      .eq('id', venueId)
-      .select()
-      .single();
+            .from('event_venues')
+            .update({ is_under_maintenance: isUnderMaintenance })
+            .eq('id', venueId)
+            .select()
+            .single();
 
     if (error) throw new Error(error.message);
 
