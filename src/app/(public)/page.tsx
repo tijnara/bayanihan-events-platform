@@ -17,13 +17,15 @@ import {
     Music,
     Flower2,
     Building2,
+    BadgeCheck,
+    ThumbsUp,
 } from 'lucide-react';
 import { getVenues } from '@/modules/events/actions/venueActions';
 import { getSiteSettings } from '@/modules/admin/actions/adminActions';
 import { VenueGrid } from '@/modules/events/components/VenueGrid';
 
-// Dynamic Icon Map for Event Venue Themes
-const BADGE_ICON_MAP: Record<string, React.ElementType> = {
+// Dynamic Icon Map for Event Venue Themes & Social Proof
+const ICON_MAP: Record<string, React.ElementType> = {
     Sparkles,
     PartyPopper,
     Trees,
@@ -35,6 +37,12 @@ const BADGE_ICON_MAP: Record<string, React.ElementType> = {
     Flower2,
     Building2,
     Star,
+    Award,
+    Users2,
+    ShieldCheck,
+    BadgeCheck,
+    ThumbsUp,
+    MapPin,
 };
 
 export default async function HomePage() {
@@ -59,10 +67,20 @@ export default async function HomePage() {
         hero_subtitle: 'Host your dream garden wedding, 18th debut, baptismal reception, or corporate banquet nestled in Lingayen’s premier pavilion venue.',
         hero_cta_button_text: 'Reserve an Event Space',
         hero_scroll_label: 'SCROLL TO EXPLORE',
+        show_social_proof_bar: true,
+        proof_1_text: '4.9★ Rated Venue in Pangasinan',
+        proof_1_icon: 'Star',
+        proof_2_text: '100% In-House Buffet Catering',
+        proof_2_icon: 'Award',
+        proof_3_text: '1,200+ Celebrations Hosted',
+        proof_3_icon: 'Users2',
     };
 
-    // Resolve dynamic icon component
-    const BadgeIconComponent = BADGE_ICON_MAP[settings.hero_season_badge_icon || 'Sparkles'] || Sparkles;
+    // Resolve dynamic icon components
+    const BadgeIconComponent = ICON_MAP[settings.hero_season_badge_icon || 'Sparkles'] || Sparkles;
+    const Proof1IconComponent = ICON_MAP[settings.proof_1_icon || 'Star'] || Star;
+    const Proof2IconComponent = ICON_MAP[settings.proof_2_icon || 'Award'] || Award;
+    const Proof3IconComponent = ICON_MAP[settings.proof_3_icon || 'Users2'] || Users2;
 
     return (
         <div className="min-h-screen bg-stone-50 text-stone-800 font-sans selection:bg-amber-200 selection:text-emerald-950 overflow-x-hidden w-full">
@@ -116,7 +134,7 @@ export default async function HomePage() {
                 </div>
             </header>
 
-            {/* 3. Hero Section with Dynamic Badge Icon */}
+            {/* 3. Hero Section */}
             <section className="relative min-h-[82vh] sm:min-h-[88vh] w-full flex flex-col justify-center items-center px-4 sm:px-6 py-6 sm:py-8 overflow-hidden">
                 <div
                     className="absolute inset-0 bg-cover bg-center bg-no-repeat scale-105"
@@ -130,7 +148,6 @@ export default async function HomePage() {
                 <div className="relative z-10 max-w-2xl w-full text-center my-auto">
                     <div className="bg-white/80 backdrop-blur-md p-5 sm:p-8 md:p-10 rounded-2xl sm:rounded-3xl border border-white/70 shadow-[0_15px_40px_rgba(0,0,0,0.12)] space-y-4 sm:space-y-5 mx-auto">
 
-                        {/* Dynamic Season Pill Badge + Dynamic Icon */}
                         <div className="inline-flex items-center gap-1.5 bg-emerald-900/10 border border-emerald-900/20 px-3 py-1 rounded-full text-emerald-900 text-[10px] sm:text-xs font-bold uppercase tracking-wider">
                             <BadgeIconComponent className="w-3.5 h-3.5 text-amber-600 animate-pulse shrink-0" />
                             <span>{settings.hero_season_badge_text}</span>
@@ -164,7 +181,7 @@ export default async function HomePage() {
                 {/* Scroll Indicator */}
                 <div className="relative z-10 mt-3 mb-1 flex flex-col items-center gap-1 text-center">
                     <a
-                        href="#social-proof"
+                        href={settings.show_social_proof_bar ? '#social-proof' : '#feature-cards'}
                         className="flex flex-col items-center gap-1 text-stone-700 hover:text-emerald-950 transition-colors animate-bounce text-[10px] sm:text-[11px] font-bold tracking-widest uppercase"
                     >
                         <span>{settings.hero_scroll_label}</span>
@@ -173,23 +190,25 @@ export default async function HomePage() {
                 </div>
             </section>
 
-            {/* 4. Social Proof Bar */}
-            <section id="social-proof" className="py-5 bg-emerald-950 text-white border-y border-emerald-900">
-                <div className="max-w-6xl mx-auto px-4 sm:px-6 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-center">
-                    <div className="flex items-center justify-center gap-2 text-xs font-semibold">
-                        <Star className="w-4 h-4 text-amber-400 fill-amber-400 shrink-0" />
-                        <span>4.9★ Rated Venue in Pangasinan</span>
+            {/* 4. Social Proof Trust Bar (Conditionally Rendered) */}
+            {settings.show_social_proof_bar !== false && (
+                <section id="social-proof" className="py-5 bg-emerald-950 text-white border-y border-emerald-900">
+                    <div className="max-w-6xl mx-auto px-4 sm:px-6 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-center">
+                        <div className="flex items-center justify-center gap-2 text-xs font-semibold">
+                            <Proof1IconComponent className="w-4 h-4 text-amber-400 shrink-0" />
+                            <span>{settings.proof_1_text}</span>
+                        </div>
+                        <div className="flex items-center justify-center gap-2 text-xs font-semibold border-t sm:border-t-0 sm:border-x border-emerald-900/80 pt-2 sm:pt-0">
+                            <Proof2IconComponent className="w-4 h-4 text-amber-400 shrink-0" />
+                            <span>{settings.proof_2_text}</span>
+                        </div>
+                        <div className="flex items-center justify-center gap-2 text-xs font-semibold border-t sm:border-t-0 border-emerald-900/80 pt-2 sm:pt-0">
+                            <Proof3IconComponent className="w-4 h-4 text-amber-400 shrink-0" />
+                            <span>{settings.proof_3_text}</span>
+                        </div>
                     </div>
-                    <div className="flex items-center justify-center gap-2 text-xs font-semibold border-t sm:border-t-0 sm:border-x border-emerald-900/80 pt-2 sm:pt-0">
-                        <Award className="w-4 h-4 text-amber-400 shrink-0" />
-                        <span>100% In-House Buffet Catering</span>
-                    </div>
-                    <div className="flex items-center justify-center gap-2 text-xs font-semibold border-t sm:border-t-0 border-emerald-900/80 pt-2 sm:pt-0">
-                        <Users2 className="w-4 h-4 text-amber-400 shrink-0" />
-                        <span>1,200+ Celebrations Hosted</span>
-                    </div>
-                </div>
-            </section>
+                </section>
+            )}
 
             {/* 5. Clickable Feature Cards */}
             <section id="feature-cards" className="py-10 sm:py-16 bg-white border-b border-stone-200/80">

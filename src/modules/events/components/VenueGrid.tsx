@@ -19,8 +19,8 @@ export const VenueGrid: React.FC<VenueGridProps> = ({ venues }) => {
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {venues.map((venue, index) => (
-                <VenueCard key={venue.id} venue={venue} isFeatured={index === 0} />
+            {venues.map((venue) => (
+                <VenueCard key={venue.id} venue={venue} isFeatured={venue.is_featured} />
             ))}
         </div>
     );

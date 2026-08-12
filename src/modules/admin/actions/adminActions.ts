@@ -92,6 +92,70 @@ export async function toggleVenueMaintenance(
 }
 
 /**
+ * Sets or unsets a venue as 'Premier Choice' (featured space).
+ * If setting to true, resets all other venues first.
+ */
+export async function toggleFeaturedVenue(
+    venueId: string,
+    shouldFeature: boolean
+): Promise<ServerActionResponse<EventVenue>> {
+    try {
+        if (shouldFeature) {
+            // 1. Reset all venues to is_featured = false
+            const { error: resetError } = await supabaseAdmin
+                .from('event_venues')
+                .update({ is_featured: false })
+                .neq('id', '00000000-0000-0000-0000-000000000000');
+
+            if (resetError) throw new Error(resetError.message);
+
+            // 2. Set the selected venue to is_featured = true
+            const { data, error } = await supabaseAdmin
+                .from('event_venues')
+                .update({ is_featured: true })
+                .eq('id', venueId)
+                .select()
+                .single();
+
+            if (error) throw new Error(error.message);
+
+            revalidatePath('/');
+            revalidatePath('/admin');
+            revalidatePath('/venues');
+
+            return {
+                success: true,
+                message: `${data.name} is now set as Premier Choice!`,
+                data: data as EventVenue,
+            };
+        } else {
+            // Unset featured status for this venue
+            const { data, error } = await supabaseAdmin
+                .from('event_venues')
+                .update({ is_featured: false })
+                .eq('id', venueId)
+                .select()
+                .single();
+
+            if (error) throw new Error(error.message);
+
+            revalidatePath('/');
+            revalidatePath('/admin');
+            revalidatePath('/venues');
+
+            return {
+                success: true,
+                message: `Premier Choice badge removed from ${data.name}.`,
+                data: data as EventVenue,
+            };
+        }
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to update Premier Choice state.';
+        return { success: false, message };
+    }
+}
+
+/**
  * Fetches dynamic landing page settings.
  */
 export async function getSiteSettings(): Promise<ServerActionResponse<SiteSettings>> {

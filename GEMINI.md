@@ -28,8 +28,8 @@ This project is **Bayanihan Events Platform**, a high-concurrency venue reservat
   * Reads dynamic content from `public.site_settings` via `getSiteSettings()`.
   * Features a full-bleed widescreen background image with a light vignette overlay, containing a translucent glass card (`bg-white/80 backdrop-blur-md`) scaling fluidly without obscuring venue imagery on mobile viewports.
   * Tagline quote typography uses balanced inline quotation styling to prevent text crowding.
-  * Supports dynamic badge text and event-themed Lucide badge icons (*Sparkles, PartyPopper, Trees, Heart, Crown, Calendar, Utensils, Music, Flower2, Building2, Star*) mapped via `BADGE_ICON_MAP`.
-  * Includes a social proof trust bar (*"4.9★ Rated Venue"*, *"100% In-House Buffet Catering"*, *"1,200+ Celebrations Hosted"*).
+  * Supports dynamic badge text and event-themed Lucide badge icons (*Sparkles, PartyPopper, Trees, Heart, Crown, Calendar, Utensils, Music, Flower2, Building2, Star*) mapped via `ICON_MAP`.
+  * Includes a conditionally rendered social proof trust bar (`show_social_proof_bar`) with dynamic text and icons (*"4.9★ Rated Venue"*, *"100% In-House Buffet Catering"*, *"1,200+ Celebrations Hosted"*).
   * Feature cards double as equal-height flex containers with uniform font weights and welcoming phrasing (*"Flexible Payments"*).
   * Replaces upper-right directory links with a prominent, centered action button (`View Full Venue Directory →`) below the venue selection grid.
 * **Venues Directory Listing (`src/app/(public)/venues/page.tsx`):**
@@ -39,6 +39,7 @@ This project is **Bayanihan Events Platform**, a high-concurrency venue reservat
   * Borderless white cards backed by soft drop shadows (`shadow-md hover:shadow-2xl hover:-translate-y-1.5`).
   * Uniform `aspect-[16/10]` widescreen image frames with scale-up hover transitions (`group-hover:scale-105`) and error-safe image fallback handlers.
   * Translucent backdrop-blur capacity badges (`bg-white/80 backdrop-blur-md`).
+  * Displays a golden **PREMIER CHOICE** badge dynamically driven by `venue.is_featured`.
   * Supports full description rendering for directory views and flex-centered action rows where pricing blocks and *"Book Venue"* buttons align on the exact vertical center axis.
 * **Interactive Step Wizard (`src/modules/events/components/EventReservationFlow.tsx`):**
   * **Explicit Active Slot Visibility:** Selected slot cards feature an explicit checkmark (`CheckCircle2`), bold green border (`border-2 border-emerald-800`), light green background tint (`bg-emerald-50/90`), and a `"SELECTED"` badge.
@@ -47,7 +48,8 @@ This project is **Bayanihan Events Platform**, a high-concurrency venue reservat
   * **High-Contrast Step Indicators:** Step buttons (`1. Date & Time`, `2. Catering`, `3. Checkout`) use high-contrast typography and indicators across mobile devices.
   * **Sticky Financial Sidebar:** Mobile-first calculator sidebar (`lg:sticky lg:top-24`) dynamically calculates total cost, 30% required deposit, and remaining balance.
 * **Responsive Admin Portal & Site Content Management (`src/app/admin/page.tsx`):**
-  * **Hero Content & Branding Tab (`HeroSettingsTab.tsx`):** Grants staff real-time control over top announcement banners, business names, navigation labels, headlines, CTA button text, and hero season badge icon dropdown selectors with live previews.
+  * **Hero Content & Branding Tab (`HeroSettingsTab.tsx`):** Grants staff real-time control over top announcement banners, business names, navigation labels, headlines, CTA button text, hero season badge icon dropdown selectors, and social proof trust bar visibility/items.
+  * **Garden Spaces & Halls Tab (`VenuesTab.tsx`):** Allows admins to set or unset any venue space as the **PREMIER CHOICE** (`is_featured`), automatically updating public showcase badges. Also toggles venue maintenance mode.
   * **Auto-Stacking Stat Cards:** Summary cards stack vertically on mobile screens (`grid-cols-1 sm:grid-cols-3`).
   * **Horizontal Scroll Menu:** Tab navigation features overflow scrolling (`overflow-x-auto whitespace-nowrap`).
   * **Mobile-Safe Data Tables (`BookingsTab.tsx`):** Data tables are wrapped in horizontal scroll containers (`overflow-x-auto min-w-[640px]`) to maintain legibility on narrow screens.
@@ -113,7 +115,6 @@ src/
         └── utils/
             ├── supabase.ts
             └── supabaseAdmin.ts
-
 ```
 
 ---
@@ -131,14 +132,18 @@ All database interactions must strictly conform to the primary schema establishe
 
 ### 2. Primary Tables
 
-* `public.event_venues`: Base spaces (*Regina's Main Garden Pavilion*, *Grand Glass Function Hall*, *Veranda Al Fresco Deck*), capacity, rental rates, maintenance status (`is_under_maintenance`).
+* `public.event_venues`: Base spaces (*Regina's Main Garden Pavilion*, *Grand Glass Function Hall*, *Veranda Al Fresco Deck*), capacity, rental rates, maintenance status (`is_under_maintenance`), and premier choice flag (`is_featured`).
 * `public.event_packages`: In-house buffet bundles (*Classic Garden Feast*, *Royal Garden Grand Celebration*), headcount, sounds/lights, stage backdrop inclusions.
 * `public.event_add_ons`: Optional extras (*Live Lechon Carving Station*, *Pangasinan Seafood Special Bar*, *360 Photo Booth*).
 * `public.event_slot_holds`: 10-to-15 minute temporary reservation locks with `expires_at` TTL.
 * `public.event_bookings`: Permanent bookings (`EVT-YYYY-XXXX` ID format) tracking 30% / ₱5,000 downpayment calculations.
-* `public.site_settings`: Single-row (`id = 1`) configuration storing dynamic homepage labels, text headlines, CTAs, and badge icons.
+* `public.site_settings`: Single-row (`id = 1`) configuration storing dynamic homepage labels, text headlines, CTAs, badge icons, and social proof trust bar items.
 
 ```sql
+-- Add is_featured column to public.event_venues
+ALTER TABLE public.event_venues
+ADD COLUMN IF NOT EXISTS is_featured BOOLEAN NOT NULL DEFAULT false;
+
 -- Create site_settings table for dynamic landing page content
 CREATE TABLE IF NOT EXISTS public.site_settings (
     id INT PRIMARY KEY DEFAULT 1,
@@ -156,6 +161,13 @@ CREATE TABLE IF NOT EXISTS public.site_settings (
     hero_subtitle TEXT NOT NULL DEFAULT 'Host your dream garden wedding, 18th debut, baptismal reception, or corporate banquet nestled in Lingayen’s premier pavilion venue.',
     hero_cta_button_text TEXT NOT NULL DEFAULT 'Reserve an Event Space',
     hero_scroll_label TEXT NOT NULL DEFAULT 'SCROLL TO EXPLORE',
+    show_social_proof_bar BOOLEAN NOT NULL DEFAULT true,
+    proof_1_text TEXT NOT NULL DEFAULT '4.9★ Rated Venue in Pangasinan',
+    proof_1_icon TEXT NOT NULL DEFAULT 'Star',
+    proof_2_text TEXT NOT NULL DEFAULT '100% In-House Buffet Catering',
+    proof_2_icon TEXT NOT NULL DEFAULT 'Award',
+    proof_3_text TEXT NOT NULL DEFAULT '1,200+ Celebrations Hosted',
+    proof_3_icon TEXT NOT NULL DEFAULT 'Users2',
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     CONSTRAINT single_row_check CHECK (id = 1)
 );
@@ -166,11 +178,6 @@ INSERT INTO public.site_settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING;
 -- Grant public read access
 ALTER TABLE public.site_settings ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow public read access to site_settings" ON public.site_settings FOR SELECT USING (true);
-
--- Ensure badge icon column exists
-ALTER TABLE public.site_settings 
-ADD COLUMN IF NOT EXISTS hero_season_badge_icon TEXT NOT NULL DEFAULT 'Sparkles';
-
 ```
 
 ### 3. Concurrency Locking Mechanics
@@ -179,7 +186,6 @@ Slot holds are governed by the atomic PostgreSQL stored procedure:
 
 ```sql
 public.hold_event_slot(p_venue_id UUID, p_event_date DATE, p_slot_block venue_slot_block, p_session_id TEXT)
-
 ```
 
 ### 4. Admin Security & RLS Bypass
@@ -213,6 +219,7 @@ export interface EventVenue {
   max_guest_capacity: number;
   base_rental_rate_php: number;
   is_under_maintenance: boolean;
+  is_featured: boolean;
   image_urls: string[];
   created_at: string;
 }
@@ -282,16 +289,22 @@ export interface SiteSettings {
   hero_subtitle: string;
   hero_cta_button_text: string;
   hero_scroll_label: string;
+  show_social_proof_bar: boolean;
+  proof_1_text: string;
+  proof_1_icon: string;
+  proof_2_text: string;
+  proof_2_icon: string;
+  proof_3_text: string;
+  proof_3_icon: string;
   updated_at?: string;
 }
 
-// ALWAYS use <T void> syntax with the '=' sign
+// ALWAYS use <T = void> syntax with the '=' sign
 export interface ServerActionResponse<T = void> {
   success: boolean;
   message?: string;
   data?: T;
 }
-
 ```
 
 ### 2. UI & Component Standards
@@ -306,7 +319,7 @@ export interface ServerActionResponse<T = void> {
 ### 3. Server Actions Protocol
 
 * Every Server Action must return a strongly-typed `ServerActionResponse<T>` object.
-* Use `supabaseAdmin` for admin actions to bypass RLS when querying all bookings or modifying `site_settings`.
+* Use `supabaseAdmin` for admin actions to bypass RLS when querying all bookings, modifying `site_settings`, or calling `toggleFeaturedVenue`.
 * Always trigger `revalidatePath()` on modified paths (`/`, `/admin`, `/venues`) upon database mutations.
 
 ```typescript
@@ -314,30 +327,59 @@ export interface ServerActionResponse<T = void> {
 
 import { revalidatePath } from 'next/cache';
 import { supabaseAdmin } from '@/modules/shared/utils/supabaseAdmin';
-import { ServerActionResponse, SiteSettings } from '@/modules/shared/types/database.types';
+import { ServerActionResponse, EventVenue } from '@/modules/shared/types/database.types';
 
-export async function updateSiteSettings(
-  payload: Partial<SiteSettings>
-): Promise<ServerActionResponse<SiteSettings>> {
+export async function toggleFeaturedVenue(
+  venueId: string,
+  shouldFeature: boolean
+): Promise<ServerActionResponse<EventVenue>> {
   try {
-    const { data, error } = await supabaseAdmin
-      .from('site_settings')
-      .update({ ...payload, updated_at: new Date().toISOString() })
-      .eq('id', 1)
-      .select()
-      .single();
+    if (shouldFeature) {
+      // 1. Reset all venues to is_featured = false
+      const { error: resetError } = await supabaseAdmin
+        .from('event_venues')
+        .update({ is_featured: false })
+        .neq('id', '00000000-0000-0000-0000-000000000000');
 
-    if (error) throw new Error(error.message);
+      if (resetError) throw new Error(resetError.message);
 
-    revalidatePath('/');
-    revalidatePath('/admin');
-    return { success: true, message: 'Website content updated successfully!', data: data as SiteSettings };
+      // 2. Set the selected venue to is_featured = true
+      const { data, error } = await supabaseAdmin
+        .from('event_venues')
+        .update({ is_featured: true })
+        .eq('id', venueId)
+        .select()
+        .single();
+
+      if (error) throw new Error(error.message);
+
+      revalidatePath('/');
+      revalidatePath('/admin');
+      revalidatePath('/venues');
+
+      return { success: true, message: `${data.name} is now set as Premier Choice!`, data: data as EventVenue };
+    } else {
+      // Unset featured status for this venue
+      const { data, error } = await supabaseAdmin
+        .from('event_venues')
+        .update({ is_featured: false })
+        .eq('id', venueId)
+        .select()
+        .single();
+
+      if (error) throw new Error(error.message);
+
+      revalidatePath('/');
+      revalidatePath('/admin');
+      revalidatePath('/venues');
+
+      return { success: true, message: `Premier Choice badge removed from ${data.name}.`, data: data as EventVenue };
+    }
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Operation failed.';
+    const message = error instanceof Error ? error.message : 'Failed to update Premier Choice state.';
     return { success: false, message };
   }
 }
-
 ```
 
 ### 4. IDE & Linter Warning Prevention Rules
@@ -345,29 +387,25 @@ export async function updateSiteSettings(
 #### 4.1 Avoiding Tailwind CSS Conflict Warnings in JetBrains IDEs (WebStorm / PyCharm)
 
 * **Problem:** WebStorm flags CSS warnings like `'border-stone-300' applies the same CSS properties as 'focus:border-emerald-800'`.
-* **Prevention Rule:** Avoid stacking redundant border classes or conflicting static/focus border utilities on the same element. Instead of combining static `border-stone-300` with `focus:border-emerald-800`, use focus ring utilities (`focus:outline-none focus:ring-2 focus:ring-emerald-800/20`) or ensure focus state overrides are isolated properly:
+* **Prevention Rule:** Avoid stacking redundant border classes or conflicting static/focus border utilities on the same element. Instead of combining static `border-stone-300` with `focus:border-emerald-800`, use focus ring utilities (`focus:outline-none focus:ring-2 focus:ring-emerald-800/20 focus:border-emerald-800`) or ensure focus state overrides are isolated properly:
+
 ```tsx
 // ✅ RECOMMENDED: Focus rings avoid border property collision warnings
 className="w-full bg-stone-50 border border-stone-300 rounded-xl px-3.5 py-2.5 text-xs font-medium text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-800/20 focus:border-emerald-800"
-
 ```
-
-
 
 #### 4.2 Avoiding React 19 / TypeScript Deprecation Warnings (`TS6385: 'FormEvent' is deprecated`)
 
 * **Problem:** React 19 / modern `@types/react` marks raw `FormEvent` or deprecated event imports as warning triggers when improperly parameterized.
 * **Prevention Rule:** Always use explicitly parameterized `React.FormEvent<HTMLFormElement>` on form submission handlers, or type native submission events cleanly. Never import raw unparameterized `FormEvent`:
+
 ```tsx
 // ✅ RECOMMENDED: Explicitly type form submit handlers with HTMLFormElement
 const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
   e.preventDefault();
   // handler logic
 };
-
 ```
-
-
 
 ---
 
@@ -389,8 +427,6 @@ $$\text{Required Downpayment} = \max(5000, \text{Math.round}(\text{Total Cost} \
 
 $$\text{Remaining Balance} = \text{Total Cost} - \text{Required Downpayment}$$
 
-
-
 ---
 
 ## 🤖 Output Expectations for Gemini Code Assist
@@ -400,7 +436,3 @@ $$\text{Remaining Balance} = \text{Total Cost} - \text{Required Downpayment}$$
 * **Strict Mobile-First Directive:** All generated components, layouts, pages, and modals must explicitly prioritize mobile viewport layouts and touch responsiveness before desktop enhancements.
 * **Zero Deprecation & Warning Policy:** Ensure all code snippets comply with Rule 4 (using `React.FormEvent<HTMLFormElement>` and clean Tailwind focus ring classes to eliminate IDE/linter warnings).
 * **Module Boundaries:** Maintain file placement rules within `src/modules/` as defined in the directory blueprint.
-
-```
-
-```

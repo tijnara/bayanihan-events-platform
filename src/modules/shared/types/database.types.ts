@@ -11,6 +11,7 @@ export interface EventVenue {
     max_guest_capacity: number;
     base_rental_rate_php: number;
     is_under_maintenance: boolean;
+    is_featured: boolean;
     image_urls: string[];
     created_at: string;
 }
@@ -80,6 +81,14 @@ export interface SiteSettings {
     hero_subtitle: string;
     hero_cta_button_text: string;
     hero_scroll_label: string;
+    // Social Proof Settings
+    show_social_proof_bar: boolean;
+    proof_1_text: string;
+    proof_1_icon: string;
+    proof_2_text: string;
+    proof_2_icon: string;
+    proof_3_text: string;
+    proof_3_icon: string;
     updated_at?: string;
 }
 
