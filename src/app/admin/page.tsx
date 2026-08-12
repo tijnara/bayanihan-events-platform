@@ -49,14 +49,14 @@ export default function AdminDashboardPage() {
     return (
         <div className="min-h-screen bg-stone-50 text-stone-800 font-sans py-6 sm:py-10 px-4 sm:px-8">
             <div className="max-w-6xl mx-auto space-y-6 sm:space-y-8">
-                {/* Responsive Header */}
+                {/* Responsive Dynamic Admin Header Banner */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-emerald-950 text-white p-5 sm:p-6 rounded-2xl sm:rounded-3xl shadow-xl">
                     <div>
                         <span className="text-amber-300 text-[10px] sm:text-xs font-bold uppercase tracking-widest block mb-1">
-                          Staff Portal Overview
+                          {siteSettings?.admin_portal_label || 'STAFF PORTAL OVERVIEW'}
                         </span>
                         <h1 className="font-serif text-xl sm:text-2xl md:text-3xl font-bold">
-                            Regina’s Garden Management
+                            {siteSettings?.admin_portal_title || 'Regina’s Garden Management'}
                         </h1>
                     </div>
                     <button
@@ -118,7 +118,7 @@ export default function AdminDashboardPage() {
                                 : 'text-stone-400 hover:text-stone-700'
                         }`}
                     >
-                        Garden Spaces & Halls ({venues.length})
+                        Venue Spaces ({venues.length})
                     </button>
                     <button
                         onClick={() => setActiveTab('hero')}

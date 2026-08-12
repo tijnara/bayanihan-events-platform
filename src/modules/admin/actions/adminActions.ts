@@ -61,7 +61,7 @@ export async function updateBookingStatus(
 }
 
 /**
- * Toggles maintenance status for a venue pavilion or function hall.
+ * Toggles maintenance/active status for a venue pavilion or function hall.
  */
 export async function toggleVenueMaintenance(
     venueId: string,
@@ -77,23 +77,23 @@ export async function toggleVenueMaintenance(
 
         if (error) throw new Error(error.message);
 
+        revalidatePath('/');
         revalidatePath('/admin');
         revalidatePath('/venues');
 
         return {
             success: true,
-            message: `Venue maintenance status updated.`,
+            message: `Venue state updated.`,
             data: data as EventVenue,
         };
     } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to update venue maintenance state.';
+        const message = error instanceof Error ? error.message : 'Failed to update venue state.';
         return { success: false, message };
     }
 }
 
 /**
  * Sets or unsets a venue as 'Premier Choice' (featured space).
- * If setting to true, resets all other venues first.
  */
 export async function toggleFeaturedVenue(
     venueId: string,
@@ -101,7 +101,6 @@ export async function toggleFeaturedVenue(
 ): Promise<ServerActionResponse<EventVenue>> {
     try {
         if (shouldFeature) {
-            // 1. Reset all venues to is_featured = false
             const { error: resetError } = await supabaseAdmin
                 .from('event_venues')
                 .update({ is_featured: false })
@@ -109,7 +108,6 @@ export async function toggleFeaturedVenue(
 
             if (resetError) throw new Error(resetError.message);
 
-            // 2. Set the selected venue to is_featured = true
             const { data, error } = await supabaseAdmin
                 .from('event_venues')
                 .update({ is_featured: true })
@@ -129,7 +127,6 @@ export async function toggleFeaturedVenue(
                 data: data as EventVenue,
             };
         } else {
-            // Unset featured status for this venue
             const { data, error } = await supabaseAdmin
                 .from('event_venues')
                 .update({ is_featured: false })
@@ -151,6 +148,80 @@ export async function toggleFeaturedVenue(
         }
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Failed to update Premier Choice state.';
+        return { success: false, message };
+    }
+}
+
+/**
+ * Updates full venue details (Name, Price, Capacity, Description, Image URL, Active State).
+ */
+export async function updateVenueDetails(
+    venueId: string,
+    payload: Partial<EventVenue>
+): Promise<ServerActionResponse<EventVenue>> {
+    try {
+        const { data, error } = await supabaseAdmin
+            .from('event_venues')
+            .update(payload)
+            .eq('id', venueId)
+            .select()
+            .single();
+
+        if (error) throw new Error(error.message);
+
+        revalidatePath('/');
+        revalidatePath('/admin');
+        revalidatePath('/venues');
+
+        return {
+            success: true,
+            message: `${data.name} details updated successfully!`,
+            data: data as EventVenue,
+        };
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to update venue details.';
+        return { success: false, message };
+    }
+}
+
+/**
+ * Creates a new venue space (Garden Pavilion, Function Hall, Deck, etc.).
+ */
+export async function createVenue(
+    payload: Omit<EventVenue, 'id' | 'created_at'>
+): Promise<ServerActionResponse<EventVenue>> {
+    try {
+        const generatedSlug =
+            payload.slug ||
+            payload.name
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/(^-|-$)+/g, '');
+
+        const { data, error } = await supabaseAdmin
+            .from('event_venues')
+            .insert({
+                ...payload,
+                slug: generatedSlug,
+                is_featured: payload.is_featured ?? false,
+                is_under_maintenance: payload.is_under_maintenance ?? false,
+            })
+            .select()
+            .single();
+
+        if (error) throw new Error(error.message);
+
+        revalidatePath('/');
+        revalidatePath('/admin');
+        revalidatePath('/venues');
+
+        return {
+            success: true,
+            message: `${data.name} added to venue catalog successfully!`,
+            data: data as EventVenue,
+        };
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to create venue.';
         return { success: false, message };
     }
 }

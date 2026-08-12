@@ -27,39 +27,49 @@ This project is **Bayanihan Events Platform**, a high-concurrency venue reservat
 * **Hero Section & Dynamic Branding (`src/app/(public)/page.tsx`):**
   * Reads dynamic content from `public.site_settings` via `getSiteSettings()`.
   * Features a full-bleed widescreen background image with a light vignette overlay, containing a translucent glass card (`bg-white/80 backdrop-blur-md`) scaling fluidly without obscuring venue imagery on mobile viewports.
-  * Tagline quote typography uses balanced inline quotation styling to prevent text crowding.
   * Supports dynamic badge text and event-themed Lucide badge icons (*Sparkles, PartyPopper, Trees, Heart, Crown, Calendar, Utensils, Music, Flower2, Building2, Star*) mapped via `ICON_MAP`.
   * Includes a conditionally rendered social proof trust bar (`show_social_proof_bar`) with dynamic text and icons (*"4.9★ Rated Venue"*, *"100% In-House Buffet Catering"*, *"1,200+ Celebrations Hosted"*).
   * Feature cards double as equal-height flex containers with uniform font weights and welcoming phrasing (*"Flexible Payments"*).
-  * Replaces upper-right directory links with a prominent, centered action button (`View Full Venue Directory →`) below the venue selection grid.
 * **Venues Directory Listing (`src/app/(public)/venues/page.tsx`):**
   * Includes a sticky navigation bar with a clear `← Back to Home` action link.
   * Features interactive category filter pills (*All Spaces, Outdoor Garden, Indoor Glass Hall, Al Fresco Deck*) and a dynamic sort selector (*Recommended, Highest Capacity, Lowest Rental Rate*).
-* **Venue Cards (`src/modules/events/components/VenueCard.tsx`):**
+* **Venue Cards & Interactive Slideshow (`src/modules/events/components/VenueCard.tsx`):**
   * Borderless white cards backed by soft drop shadows (`shadow-md hover:shadow-2xl hover:-translate-y-1.5`).
-  * Uniform `aspect-[16/10]` widescreen image frames with scale-up hover transitions (`group-hover:scale-105`) and error-safe image fallback handlers.
-  * Translucent backdrop-blur capacity badges (`bg-white/80 backdrop-blur-md`).
+  * **Automated Multi-Photo Slideshow:** Cross-fade slide transitions every 3.5s with pause-on-hover, slide indicator pills, photo counter (`📸 1 / N`), and left/right navigation controls.
+  * Displays dynamic rental duration labels (`venue.slot_duration_text` e.g., `/ 5-hr slot block`).
   * Displays a golden **PREMIER CHOICE** badge dynamically driven by `venue.is_featured`.
-  * Supports full description rendering for directory views and flex-centered action rows where pricing blocks and *"Book Venue"* buttons align on the exact vertical center axis.
+  * **Click-to-Enlarge Lightbox Trigger:** Clicking any venue photo opens the enlarged lightbox modal.
+* **Enlarged Photo Lightbox Modal (`src/modules/events/components/VenueImageLightboxModal.tsx`):**
+  * Full-screen modal with ambient blur background lighting.
+  * Keyboard navigation support (`Esc` to exit, `ArrowLeft` / `ArrowRight` to cycle photos).
+  * Interactive thumbnail gallery strip.
+  * Render-phase state adjustments preventing `react-hooks/set-state-in-effect` warnings.
 * **Interactive Step Wizard (`src/modules/events/components/EventReservationFlow.tsx`):**
   * **Explicit Active Slot Visibility:** Selected slot cards feature an explicit checkmark (`CheckCircle2`), bold green border (`border-2 border-emerald-800`), light green background tint (`bg-emerald-50/90`), and a `"SELECTED"` badge.
-  * **Header & Navigation Controls:** Moves the `← Back to Venues Directory` link outside the header container to prevent squeezed button layouts on mobile screens. Features dedicated **Cancel Draft** actions.
-  * **Cancellation Safety Modal:** Clicking cancel opens a responsive popup (`AlertTriangle` modal) prompting the user to confirm cancellation before releasing slot holds and redirecting to `/venues`.
-  * **High-Contrast Step Indicators:** Step buttons (`1. Date & Time`, `2. Catering`, `3. Checkout`) use high-contrast typography and indicators across mobile devices.
+  * **Cancellation Safety Modal:** Responsive popup (`AlertTriangle` modal) prompting confirmation before releasing slot holds.
   * **Sticky Financial Sidebar:** Mobile-first calculator sidebar (`lg:sticky lg:top-24`) dynamically calculates total cost, 30% required deposit, and remaining balance.
 * **Responsive Admin Portal & Site Content Management (`src/app/admin/page.tsx`):**
-  * **Hero Content & Branding Tab (`HeroSettingsTab.tsx`):** Grants staff real-time control over top announcement banners, business names, navigation labels, headlines, CTA button text, hero season badge icon dropdown selectors, and social proof trust bar visibility/items.
-  * **Garden Spaces & Halls Tab (`VenuesTab.tsx`):** Allows admins to set or unset any venue space as the **PREMIER CHOICE** (`is_featured`), automatically updating public showcase badges. Also toggles venue maintenance mode.
-  * **Auto-Stacking Stat Cards:** Summary cards stack vertically on mobile screens (`grid-cols-1 sm:grid-cols-3`).
-  * **Horizontal Scroll Menu:** Tab navigation features overflow scrolling (`overflow-x-auto whitespace-nowrap`).
-  * **Mobile-Safe Data Tables (`BookingsTab.tsx`):** Data tables are wrapped in horizontal scroll containers (`overflow-x-auto min-w-[640px]`) to maintain legibility on narrow screens.
-  * **Bounded Review Modal (`VerifyReceiptModal.tsx`):** Modal viewport is constrained (`max-h-[92vh] overflow-y-auto`) to ensure action buttons are reachable on mobile screens.
+  * **Dynamic Banner Header:** Banner subtitle (`admin_portal_label`) and title (`admin_portal_title`) are editable live from the admin panel.
+  * **Venue Spaces Tab (`VenuesTab.tsx`):**
+    * **Catalog Management Bar:** Header containing the `+ Add New Venue` trigger.
+    * **Premier Choice Toggle:** Clickable `★ PREMIER CHOICE` toggle to feature/un-feature spaces.
+    * **Active / Inactive Status Badges:** Quick-toggle switch between Active and Inactive (Maintenance) modes.
+    * **Edit Venue Details Modal Trigger:** Opens full venue edit drawer.
+  * **Add New Venue Modal (`AddVenueModal.tsx`):** Enables staff to create new venue spaces with custom pricing, capacity, custom duration labels, active status, description, and multi-photo uploads.
+  * **Edit Venue Modal (`EditVenueModal.tsx`):**
+    * Client-side HTML5 Canvas image downscaling/compression (`compressImageFile`) to resize local uploads to ~200–400KB JPEGs before submission.
+    * Supports dual upload channels: local photo files (via `FileReader`) and direct web image URLs.
+    * Editable duration label field (`slot_duration_text`).
+    * Interactive gallery grid with instant thumbnail previews and deletion controls.
+    * Render-phase state adjustment (`if (venue && venue.id !== prevVenueId)`) conforming strictly to React Rules of Hooks without triggering `react-hooks/set-state-in-effect`.
+  * **Hero Content & Branding Tab (`HeroSettingsTab.tsx`):** Controls announcement banners, business titles, navigation labels, headlines, season badges, social proof trust items, and admin portal header text (`admin_portal_label`, `admin_portal_title`). Clean HTML entities (`&quot;`) prevent `react/no-unescaped-entities` warnings.
 
 ---
 
-## 🛠️ Stack Architecture
+## 🛠️ Stack Architecture & Payload Configuration
 
 * **Framework:** Next.js 15+ / 16 (App Router with Turbopack), React 19, TypeScript
+* **Server Action Payload Limit (`next.config.ts`):** Configured with `experimental.serverActions.bodySizeLimit: '10mb'` to handle compressed multi-photo uploads smoothly.
 * **Styling & Fonts:** Tailwind CSS v4 (`@import "tailwindcss";`), Google Fonts (`Playfair_Display`, `Inter`), Lucide React
 * **Backend & Database:** Supabase PostgreSQL, Stored Procedures, Service Role SDK (`supabaseAdmin.ts`), Realtime WebSockets
 * **State & Server Execution:** Next.js Server Actions (`venueActions.ts`, `adminActions.ts`) with typed responses
@@ -88,6 +98,7 @@ src/
     │   │   └── adminActions.ts
     │   └── components/
     │       ├── modals/
+    │       │   ├── AddVenueModal.tsx
     │       │   ├── EditVenueModal.tsx
     │       │   └── VerifyReceiptModal.tsx
     │       └── tabs/
@@ -101,7 +112,8 @@ src/
     │   └── components/
     │       ├── EventReservationFlow.tsx
     │       ├── VenueCard.tsx
-    │       └── VenueGrid.tsx
+    │       ├── VenueGrid.tsx
+    │       └── VenueImageLightboxModal.tsx
     ├── packages/
     │   ├── actions/
     │   │   └── packageActions.ts
@@ -115,6 +127,7 @@ src/
         └── utils/
             ├── supabase.ts
             └── supabaseAdmin.ts
+
 ```
 
 ---
@@ -132,19 +145,20 @@ All database interactions must strictly conform to the primary schema establishe
 
 ### 2. Primary Tables
 
-* `public.event_venues`: Base spaces (*Regina's Main Garden Pavilion*, *Grand Glass Function Hall*, *Veranda Al Fresco Deck*), capacity, rental rates, maintenance status (`is_under_maintenance`), and premier choice flag (`is_featured`).
+* `public.event_venues`: Base spaces (*Regina's Main Garden Pavilion*, *Grand Glass Function Hall*, *Veranda Al Fresco Deck*), capacity, rental rates, maintenance status (`is_under_maintenance`), premier choice flag (`is_featured`), and duration label (`slot_duration_text`).
 * `public.event_packages`: In-house buffet bundles (*Classic Garden Feast*, *Royal Garden Grand Celebration*), headcount, sounds/lights, stage backdrop inclusions.
 * `public.event_add_ons`: Optional extras (*Live Lechon Carving Station*, *Pangasinan Seafood Special Bar*, *360 Photo Booth*).
-* `public.event_slot_holds`: 10-to-15 minute temporary reservation locks with `expires_at` TTL.
+* `public.event_slot_holds`: Temporary reservation locks with `expires_at` TTL.
 * `public.event_bookings`: Permanent bookings (`EVT-YYYY-XXXX` ID format) tracking 30% / ₱5,000 downpayment calculations.
-* `public.site_settings`: Single-row (`id = 1`) configuration storing dynamic homepage labels, text headlines, CTAs, badge icons, and social proof trust bar items.
+* `public.site_settings`: Single-row (`id = 1`) configuration storing dynamic homepage labels, text headlines, CTAs, badge icons, social proof items, and admin portal header text (`admin_portal_label`, `admin_portal_title`).
 
 ```sql
--- Add is_featured column to public.event_venues
+-- Schema Enhancements for Event Venues & Admin Branding
 ALTER TABLE public.event_venues
-ADD COLUMN IF NOT EXISTS is_featured BOOLEAN NOT NULL DEFAULT false;
+ADD COLUMN IF NOT EXISTS is_featured BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN IF NOT EXISTS slot_duration_text TEXT NOT NULL DEFAULT '/ 5-hr slot block';
 
--- Create site_settings table for dynamic landing page content
+-- Create site_settings table for dynamic site-wide content
 CREATE TABLE IF NOT EXISTS public.site_settings (
     id INT PRIMARY KEY DEFAULT 1,
     top_banner_text TEXT NOT NULL DEFAULT 'Maramba Blvd., Libsong West, Lingayen, Pangasinan — Open for 2026/2027 Event Reservations',
@@ -168,6 +182,8 @@ CREATE TABLE IF NOT EXISTS public.site_settings (
     proof_2_icon TEXT NOT NULL DEFAULT 'Award',
     proof_3_text TEXT NOT NULL DEFAULT '1,200+ Celebrations Hosted',
     proof_3_icon TEXT NOT NULL DEFAULT 'Users2',
+    admin_portal_label TEXT NOT NULL DEFAULT 'STAFF PORTAL OVERVIEW',
+    admin_portal_title TEXT NOT NULL DEFAULT 'Regina’s Garden Management',
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     CONSTRAINT single_row_check CHECK (id = 1)
 );
@@ -178,6 +194,7 @@ INSERT INTO public.site_settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING;
 -- Grant public read access
 ALTER TABLE public.site_settings ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow public read access to site_settings" ON public.site_settings FOR SELECT USING (true);
+
 ```
 
 ### 3. Concurrency Locking Mechanics
@@ -186,6 +203,7 @@ Slot holds are governed by the atomic PostgreSQL stored procedure:
 
 ```sql
 public.hold_event_slot(p_venue_id UUID, p_event_date DATE, p_slot_block venue_slot_block, p_session_id TEXT)
+
 ```
 
 ### 4. Admin Security & RLS Bypass
@@ -218,6 +236,7 @@ export interface EventVenue {
   description: string;
   max_guest_capacity: number;
   base_rental_rate_php: number;
+  slot_duration_text?: string;
   is_under_maintenance: boolean;
   is_featured: boolean;
   image_urls: string[];
@@ -296,6 +315,8 @@ export interface SiteSettings {
   proof_2_icon: string;
   proof_3_text: string;
   proof_3_icon: string;
+  admin_portal_label: string;
+  admin_portal_title: string;
   updated_at?: string;
 }
 
@@ -305,6 +326,7 @@ export interface ServerActionResponse<T = void> {
   message?: string;
   data?: T;
 }
+
 ```
 
 ### 2. UI & Component Standards
@@ -319,7 +341,7 @@ export interface ServerActionResponse<T = void> {
 ### 3. Server Actions Protocol
 
 * Every Server Action must return a strongly-typed `ServerActionResponse<T>` object.
-* Use `supabaseAdmin` for admin actions to bypass RLS when querying all bookings, modifying `site_settings`, or calling `toggleFeaturedVenue`.
+* Use `supabaseAdmin` for admin actions (`createVenue`, `updateVenueDetails`, `toggleFeaturedVenue`, `updateSiteSettings`) to bypass Supabase RLS safely on server actions.
 * Always trigger `revalidatePath()` on modified paths (`/`, `/admin`, `/venues`) upon database mutations.
 
 ```typescript
@@ -329,83 +351,124 @@ import { revalidatePath } from 'next/cache';
 import { supabaseAdmin } from '@/modules/shared/utils/supabaseAdmin';
 import { ServerActionResponse, EventVenue } from '@/modules/shared/types/database.types';
 
-export async function toggleFeaturedVenue(
-  venueId: string,
-  shouldFeature: boolean
+export async function createVenue(
+  payload: Omit<EventVenue, 'created_at' | 'id'>
 ): Promise<ServerActionResponse<EventVenue>> {
   try {
-    if (shouldFeature) {
-      // 1. Reset all venues to is_featured = false
-      const { error: resetError } = await supabaseAdmin
-        .from('event_venues')
-        .update({ is_featured: false })
-        .neq('id', '00000000-0000-0000-0000-000000000000');
+    const generatedSlug =
+      payload.slug ||
+      payload.name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)+/g, '');
 
-      if (resetError) throw new Error(resetError.message);
+    const { data, error } = await supabaseAdmin
+      .from('event_venues')
+      .insert({
+        ...payload,
+        slug: generatedSlug,
+        is_featured: payload.is_featured ?? false,
+        is_under_maintenance: payload.is_under_maintenance ?? false,
+      })
+      .select()
+      .single();
 
-      // 2. Set the selected venue to is_featured = true
-      const { data, error } = await supabaseAdmin
-        .from('event_venues')
-        .update({ is_featured: true })
-        .eq('id', venueId)
-        .select()
-        .single();
+    if (error) throw new Error(error.message);
 
-      if (error) throw new Error(error.message);
+    revalidatePath('/');
+    revalidatePath('/admin');
+    revalidatePath('/venues');
 
-      revalidatePath('/');
-      revalidatePath('/admin');
-      revalidatePath('/venues');
-
-      return { success: true, message: `${data.name} is now set as Premier Choice!`, data: data as EventVenue };
-    } else {
-      // Unset featured status for this venue
-      const { data, error } = await supabaseAdmin
-        .from('event_venues')
-        .update({ is_featured: false })
-        .eq('id', venueId)
-        .select()
-        .single();
-
-      if (error) throw new Error(error.message);
-
-      revalidatePath('/');
-      revalidatePath('/admin');
-      revalidatePath('/venues');
-
-      return { success: true, message: `Premier Choice badge removed from ${data.name}.`, data: data as EventVenue };
-    }
+    return {
+      success: true,
+      message: `${data.name} added to venue catalog successfully!`,
+      data: data as EventVenue,
+    };
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to update Premier Choice state.';
+    const message = error instanceof Error ? error.message : 'Failed to create venue.';
     return { success: false, message };
   }
 }
+
 ```
 
-### 4. IDE & Linter Warning Prevention Rules
+### 4. IDE, React 19 & Warning Prevention Rules
 
-#### 4.1 Avoiding Tailwind CSS Conflict Warnings in JetBrains IDEs (WebStorm / PyCharm)
+#### 4.1 Avoiding Unescaped JSX Character Warnings (`react/no-unescaped-entities`)
 
-* **Problem:** WebStorm flags CSS warnings like `'border-stone-300' applies the same CSS properties as 'focus:border-emerald-800'`.
-* **Prevention Rule:** Avoid stacking redundant border classes or conflicting static/focus border utilities on the same element. Instead of combining static `border-stone-300` with `focus:border-emerald-800`, use focus ring utilities (`focus:outline-none focus:ring-2 focus:ring-emerald-800/20 focus:border-emerald-800`) or ensure focus state overrides are isolated properly:
+* **Problem:** JSX text containing raw unescaped quotes (`"`, `'`) triggers ESLint warnings.
+* **Prevention Rule:** Always escape quotes using HTML entities (`&quot;`, `&apos;`) or wrap string literals inside JSX expressions (`{"\""}`):
 
 ```tsx
-// ✅ RECOMMENDED: Focus rings avoid border property collision warnings
-className="w-full bg-stone-50 border border-stone-300 rounded-xl px-3.5 py-2.5 text-xs font-medium text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-800/20 focus:border-emerald-800"
+// ✅ RECOMMENDED: Use HTML entities for clean JSX
+<p>The social proof bar is hidden. Click &quot;Hidden from Landing Page&quot; above to enable it.</p>
+
 ```
 
-#### 4.2 Avoiding React 19 / TypeScript Deprecation Warnings (`TS6385: 'FormEvent' is deprecated`)
+#### 4.2 Render-Phase State Adjustment Rule (Preventing `react-hooks/set-state-in-effect`)
 
-* **Problem:** React 19 / modern `@types/react` marks raw `FormEvent` or deprecated event imports as warning triggers when improperly parameterized.
-* **Prevention Rule:** Always use explicitly parameterized `React.FormEvent<HTMLFormElement>` on form submission handlers, or type native submission events cleanly. Never import raw unparameterized `FormEvent`:
+* **Problem:** Calling `setState` synchronously inside `useEffect` when props change causes cascading renders and ESLint errors.
+* **Prevention Rule:** Do not use `useEffect` to synchronize props to state. Perform render-phase state adjustments directly in the component body before early returns:
 
 ```tsx
-// ✅ RECOMMENDED: Explicitly type form submit handlers with HTMLFormElement
-const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-  e.preventDefault();
-  // handler logic
+// ✅ RECOMMENDED: Perform render-phase state adjustment when props change
+export const EditVenueModal = ({ venue, onClose }) => {
+  const [name, setName] = useState('');
+  const [prevVenueId, setPrevVenueId] = useState<string | null>(null);
+
+  // Synchronize state safely during rendering without useEffect
+  if (venue && venue.id !== prevVenueId) {
+    setPrevVenueId(venue.id);
+    setName(venue.name || '');
+  }
+
+  if (!venue) return null; // Safe early return
 };
+
 ```
+
+#### 4.3 Client-Side Image Downscaling (Preventing `Body exceeded 1 MB limit` Errors)
+
+* **Problem:** High-resolution local image uploads converted directly to Base64 strings can exceed Server Action body payload limits.
+* **Prevention Rule:** Always downscale client-side images via HTML5 Canvas before sending Base64 strings to Server Actions:
+
+```typescript
+const compressImageFile = (file: File, maxWidth = 1600, quality = 0.8): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = e.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  });
+};
+
+```
+
+#### 4.4 Avoiding Tailwind CSS Property Conflict Warnings in JetBrains IDEs
+
+* **Prevention Rule:** Use focus ring utilities (`focus:outline-none focus:ring-2 focus:ring-emerald-800/20 focus:border-emerald-800`) to avoid stacking redundant static border and focus border overrides.
+
+#### 4.5 Parameterized React 19 Form Handlers
+
+* **Prevention Rule:** Always explicitly parameterize form submission handlers with `React.FormEvent<HTMLFormElement>`.
 
 ---
 
@@ -427,6 +490,8 @@ $$\text{Required Downpayment} = \max(5000, \text{Math.round}(\text{Total Cost} \
 
 $$\text{Remaining Balance} = \text{Total Cost} - \text{Required Downpayment}$$
 
+
+
 ---
 
 ## 🤖 Output Expectations for Gemini Code Assist
@@ -434,5 +499,5 @@ $$\text{Remaining Balance} = \text{Total Cost} - \text{Required Downpayment}$$
 * **Complete Code Snippets:** Provide full, copy-paste-ready React/TypeScript code without truncating imports, types, or internal logic.
 * **Strict Domain Consistency:** Always use event venue nomenclature (organizer, event date, slot block, catering headcount, package). Never default to hotel/resort terminology (rooms, nights, check-in).
 * **Strict Mobile-First Directive:** All generated components, layouts, pages, and modals must explicitly prioritize mobile viewport layouts and touch responsiveness before desktop enhancements.
-* **Zero Deprecation & Warning Policy:** Ensure all code snippets comply with Rule 4 (using `React.FormEvent<HTMLFormElement>` and clean Tailwind focus ring classes to eliminate IDE/linter warnings).
+* **Zero Deprecation & Warning Policy:** Ensure all code snippets comply with Rule 4 (using `React.FormEvent<HTMLFormElement>`, render-phase prop sync without `useEffect`, `&quot;` HTML entities for double quotes, and client-side canvas compression for local photo uploads).
 * **Module Boundaries:** Maintain file placement rules within `src/modules/` as defined in the directory blueprint.

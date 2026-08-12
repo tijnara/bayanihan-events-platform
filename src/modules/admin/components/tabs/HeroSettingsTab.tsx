@@ -29,6 +29,7 @@ import {
     Layout,
     Type,
     BadgeCheck,
+    ShieldAlert,
 } from 'lucide-react';
 
 interface HeroSettingsTabProps {
@@ -104,7 +105,7 @@ export const HeroSettingsTab: React.FC<HeroSettingsTabProps> = ({ settings, onRe
             <div className="flex items-center justify-between bg-white p-4 rounded-2xl border border-stone-200 shadow-sm sticky top-20 z-20">
                 <div>
                     <h3 className="font-serif font-bold text-base text-stone-900">Hero Section & Branding Editor</h3>
-                    <p className="text-xs text-stone-500">Edit business labels, main headlines, social proof trust items, and CTA text in real-time.</p>
+                    <p className="text-xs text-stone-500">Edit business labels, main headlines, social proof trust items, and admin portal banners.</p>
                 </div>
                 <button
                     type="submit"
@@ -133,7 +134,36 @@ export const HeroSettingsTab: React.FC<HeroSettingsTabProps> = ({ settings, onRe
                 </div>
             )}
 
-            {/* 1. Header Navigation & Branding */}
+            {/* 1. Admin Portal Banner Customization */}
+            <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm space-y-4">
+                <h4 className="font-serif font-bold text-sm text-emerald-950 border-b border-stone-100 pb-2 flex items-center gap-2">
+                    <ShieldAlert className="w-4 h-4 text-amber-600" />
+                    <span>Admin Portal Banner Settings</span>
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div>
+                        <label className="font-bold text-stone-700 block mb-1">Admin Portal Subtitle / Small Badge Label</label>
+                        <input
+                            type="text"
+                            value={formData.admin_portal_label || 'STAFF PORTAL OVERVIEW'}
+                            onChange={(e) => handleChange('admin_portal_label', e.target.value)}
+                            className="w-full bg-stone-50 border border-stone-300 rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-800/20 focus:border-emerald-800 font-medium"
+                        />
+                    </div>
+                    <div>
+                        <label className="font-bold text-stone-700 block mb-1">Admin Portal Main Title</label>
+                        <input
+                            type="text"
+                            value={formData.admin_portal_title || 'Regina’s Garden Management'}
+                            onChange={(e) => handleChange('admin_portal_title', e.target.value)}
+                            className="w-full bg-stone-50 border border-stone-300 rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-800/20 focus:border-emerald-800 font-medium"
+                        />
+                    </div>
+                </div>
+            </div>
+
+            {/* 2. Header Navigation & Branding */}
             <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm space-y-4">
                 <h4 className="font-serif font-bold text-sm text-emerald-950 border-b border-stone-100 pb-2 flex items-center gap-2">
                     <Layout className="w-4 h-4 text-amber-600" />
@@ -214,7 +244,7 @@ export const HeroSettingsTab: React.FC<HeroSettingsTabProps> = ({ settings, onRe
                 </div>
             </div>
 
-            {/* 2. Main Hero Content */}
+            {/* 3. Main Hero Content */}
             <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm space-y-4">
                 <h4 className="font-serif font-bold text-sm text-emerald-950 border-b border-stone-100 pb-2 flex items-center gap-2">
                     <Type className="w-4 h-4 text-amber-600" />
@@ -311,7 +341,7 @@ export const HeroSettingsTab: React.FC<HeroSettingsTabProps> = ({ settings, onRe
                 </div>
             </div>
 
-            {/* 3. NEW: Social Proof Trust Bar Section (Editable & Toggleable) */}
+            {/* 4. Social Proof Trust Bar Section */}
             <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm space-y-4">
                 <div className="flex items-center justify-between border-b border-stone-100 pb-3">
                     <h4 className="font-serif font-bold text-sm text-emerald-950 flex items-center gap-2">
@@ -319,7 +349,6 @@ export const HeroSettingsTab: React.FC<HeroSettingsTabProps> = ({ settings, onRe
                         <span>Social Proof Trust Bar</span>
                     </h4>
 
-                    {/* Show/Hide Section Toggle Switch */}
                     <button
                         type="button"
                         onClick={() => handleChange('show_social_proof_bar', !formData.show_social_proof_bar)}
@@ -443,7 +472,7 @@ export const HeroSettingsTab: React.FC<HeroSettingsTabProps> = ({ settings, onRe
                     </div>
                 ) : (
                     <div className="py-4 text-center bg-stone-50 rounded-xl border border-stone-200 text-stone-500 text-xs">
-                        The social proof bar is currently hidden. Click "Hidden from Landing Page" above to enable it.
+                        The social proof bar is currently hidden. Click &quot;Hidden from Landing Page&quot; above to enable it.
                     </div>
                 )}
             </div>

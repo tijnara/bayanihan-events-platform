@@ -10,6 +10,7 @@ export interface EventVenue {
     description: string;
     max_guest_capacity: number;
     base_rental_rate_php: number;
+    slot_duration_text?: string;
     is_under_maintenance: boolean;
     is_featured: boolean;
     image_urls: string[];
@@ -89,6 +90,9 @@ export interface SiteSettings {
     proof_2_icon: string;
     proof_3_text: string;
     proof_3_icon: string;
+    // Admin Portal Settings
+    admin_portal_label: string;
+    admin_portal_title: string;
     updated_at?: string;
 }
 
