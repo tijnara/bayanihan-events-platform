@@ -3,6 +3,16 @@ export type EventBookingStatus = 'pending_deposit' | 'confirmed' | 'completed' |
 export type VenueSlotBlock = 'morning_lunch' | 'evening_dinner' | 'whole_day';
 export type PHEventType = 'debut_18th' | 'wedding' | 'christening_banyag' | 'baranggay_fiesta' | 'corporate_party' | 'private_gathering';
 
+export type AppRole = 'admin' | 'manager' | 'staff';
+
+export interface UserProfile {
+    id: string;
+    full_name: string;
+    email: string;
+    role: AppRole;
+    created_at: string;
+}
+
 export interface EventVenue {
     id: string;
     name: string;
@@ -82,7 +92,6 @@ export interface SiteSettings {
     hero_subtitle: string;
     hero_cta_button_text: string;
     hero_scroll_label: string;
-    // Social Proof Settings
     show_social_proof_bar: boolean;
     proof_1_text: string;
     proof_1_icon: string;
@@ -90,7 +99,6 @@ export interface SiteSettings {
     proof_2_icon: string;
     proof_3_text: string;
     proof_3_icon: string;
-    // Admin Portal Settings
     admin_portal_label: string;
     admin_portal_title: string;
     updated_at?: string;

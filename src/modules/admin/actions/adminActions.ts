@@ -3,12 +3,128 @@
 import { revalidatePath } from 'next/cache';
 import { supabaseAdmin } from '@/modules/shared/utils/supabaseAdmin';
 import {
+    AppRole,
     EventBookingRecord,
     EventBookingStatus,
     EventVenue,
     ServerActionResponse,
     SiteSettings,
+    UserProfile,
 } from '@/modules/shared/types/database.types';
+
+/**
+ * Fetches all registered system users (Admins, Managers, Staff).
+ */
+export async function getUsers(): Promise<ServerActionResponse<UserProfile[]>> {
+    try {
+        const { data, error } = await supabaseAdmin
+            .from('user_profiles')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) throw new Error(error.message);
+
+        return { success: true, data: data as UserProfile[] };
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to fetch user accounts.';
+        return { success: false, message };
+    }
+}
+
+/**
+ * Creates a new portal user account with designated AppRole.
+ */
+export async function createUserAccount(
+    fullName: string,
+    email: string,
+    pass: string,
+    role: AppRole
+): Promise<ServerActionResponse<UserProfile>> {
+    try {
+        const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
+            email,
+            password: pass,
+            email_confirm: true,
+            user_metadata: { full_name: fullName, role },
+        });
+
+        if (authError || !authUser.user) throw new Error(authError?.message || 'Failed to create Auth user.');
+
+        const { data: profile, error: profileError } = await supabaseAdmin
+            .from('user_profiles')
+            .upsert({
+                id: authUser.user.id,
+                full_name: fullName,
+                email,
+                role,
+            })
+            .select()
+            .single();
+
+        if (profileError) throw new Error(profileError.message);
+
+        revalidatePath('/admin');
+
+        return {
+            success: true,
+            message: `Account for ${fullName} (${role.toUpperCase()}) created successfully!`,
+            data: profile as UserProfile,
+        };
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to create user account.';
+        return { success: false, message };
+    }
+}
+
+/**
+ * Updates an existing user's system role (Admin, Manager, Staff).
+ */
+export async function updateUserRole(
+    userId: string,
+    newRole: AppRole
+): Promise<ServerActionResponse<UserProfile>> {
+    try {
+        const { data, error } = await supabaseAdmin
+            .from('user_profiles')
+            .update({ role: newRole })
+            .eq('id', userId)
+            .select()
+            .single();
+
+        if (error) throw new Error(error.message);
+
+        revalidatePath('/admin');
+
+        return {
+            success: true,
+            message: `User role updated to ${newRole.toUpperCase()}.`,
+            data: data as UserProfile,
+        };
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to update user role.';
+        return { success: false, message };
+    }
+}
+
+/**
+ * Deletes a user account from Auth and User Profiles.
+ */
+export async function deleteUserAccount(userId: string): Promise<ServerActionResponse> {
+    try {
+        const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+        if (authError) throw new Error(authError.message);
+
+        revalidatePath('/admin');
+
+        return {
+            success: true,
+            message: 'User account removed successfully.',
+        };
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to delete user account.';
+        return { success: false, message };
+    }
+}
 
 /**
  * Fetches all event bookings for admin oversight (bypasses RLS).
@@ -30,7 +146,7 @@ export async function getBookings(): Promise<ServerActionResponse<EventBookingRe
 }
 
 /**
- * Updates a booking's status (e.g., from 'pending_deposit' to 'confirmed' or 'cancelled').
+ * Updates a booking's status.
  */
 export async function updateBookingStatus(
     bookingId: string,
@@ -153,7 +269,7 @@ export async function toggleFeaturedVenue(
 }
 
 /**
- * Updates full venue details (Name, Price, Capacity, Description, Image URL, Active State).
+ * Updates full venue details.
  */
 export async function updateVenueDetails(
     venueId: string,
@@ -185,7 +301,7 @@ export async function updateVenueDetails(
 }
 
 /**
- * Creates a new venue space (Garden Pavilion, Function Hall, Deck, etc.).
+ * Creates a new venue space.
  */
 export async function createVenue(
     payload: Omit<EventVenue, 'id' | 'created_at'>
